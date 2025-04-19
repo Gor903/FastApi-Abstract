@@ -1,10 +1,11 @@
 """Add: Hotel, Bus, Ticket
 
 Revision ID: 3b74a0006642
-Revises: 
+Revises:
 Create Date: 2025-04-20 00:45:01.058128
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '3b74a0006642'
+revision: str = "3b74a0006642"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

@@ -9,7 +9,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "FastAPI-Abstract"
-    
+
     SECRET_KEY: str = os.getenv("SECRET_KEY", "SuperSecretKey")
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
@@ -18,8 +18,11 @@ class Settings(BaseSettings):
 
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
 
-    CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = ["http://localhost:3000", "http://localhost:8000"]
-    
+    CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+    ]
+
     DATABASE_URL: str = (
         "postgresql+asyncpg://"
         + f"{os.getenv('POSTGRES_USER')}:"
@@ -28,7 +31,7 @@ class Settings(BaseSettings):
         + f"{os.getenv('POSTGRES_PORT')}/"
         + f"{os.getenv('POSTGRES_DB')}"
     )
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = True
