@@ -1,0 +1,158 @@
+import uuid
+from datetime import datetime, timedelta
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import ForeignKey, String, DateTime, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
+
+from src.db import Base
+
+if TYPE_CHECKING:
+    from src.db.models import User
+
+
+class Auth(Base):
+    __tablename__ = "auth"
+
+    id: Mapped[int] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+    )
+    hashed_password: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship(
+        back_populates="auth",
+    )
+
+    def __repr__(self):
+        return f"<Auth user_id={self.user_id}>"
+
+
+class LoginHistory(Base):
+    __tablename__ = "login_history"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow,
+        nullable=False,
+    )
+    is_active: Mapped[bool] = mapped_column(
+        default=True,
+        nullable=False,
+    )
+    device: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+    ip: Mapped[str] = mapped_column(
+        String(45),
+        nullable=False,
+    )
+    location: Mapped[str] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    user: Mapped["User"] = relationship(
+        back_populates="login_history",
+    )
+
+    def __repr__(self):
+        return f"<LoginHistory id={self.id} user_id={self.user_id} ip={self.ip}>"
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+    )
+
+    token_hash: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    issued_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow,
+        nullable=False,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        nullable=False,
+    )
+    revoked: Mapped[bool] = mapped_column(
+        default=False,
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship(
+        back_populates="refresh_tokens",
+    )
+
+    def __repr__(self):
+        return f"<RefreshToken id={self.id} user_id={self.user_id}>"
+
+
+class EmailVerification(Base):
+    __tablename__ = "email_verification"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+    )
+
+    token: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow,
+        nullable=False,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.utcnow() + timedelta(hours=24),
+        nullable=False,
+    )
+    is_used: Mapped[bool] = mapped_column(
+        default=False,
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship(
+        back_populates="email_verification",
+    )
+
+    def __repr__(self):
+        return f"<EmailVerification id={self.id} user_id={self.user_id}>"
