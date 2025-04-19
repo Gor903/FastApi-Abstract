@@ -2,10 +2,11 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import MetaData
 
-from src.core import DATABASE_URL
+from src.core import settings
+from src.db import Base
 
 engine = create_async_engine(
-    DATABASE_URL,
+    settings.DATABASE_URL,
     echo=False, 
     future=True,
 )
@@ -15,8 +16,6 @@ AsyncSessionMaker = sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
-
-Base = declarative_base(metadata=MetaData())
 
 async def get_async_session():
     async with AsyncSessionMaker() as session:
