@@ -1,6 +1,6 @@
-from .db_dependency import db_dependency
+from .db_dependency import async_session
 
 
 __all__ = [
-    "db_dependency",
+    "async_session",
 ]
