@@ -3,6 +3,7 @@ from fastapi import FastAPI
 
 from src.db import init_db
 from src.core import setup_middlewares
+from src.routes import auth_router
 
 
 @asynccontextmanager
@@ -18,6 +19,8 @@ def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
     setup_middlewares(app)
+
+    app.include_router(auth_router)
 
     return app
 
