@@ -18,32 +18,38 @@ class User(Base):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
+        info={"description": "UUID primary key, auto-generated and unique."},
     )
     email: Mapped[str] = mapped_column(
         String,
         unique=True,
         index=True,
         nullable=False,
+        info={"description": "User email. Unique"},
     )
     username: Mapped[str] = mapped_column(
         String(50),
         unique=True,
         index=True,
         nullable=False,
+        info={"description": "User name. Unique"},
     )
     full_name: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
+        info={"description": "User's full name."},
     )
     bio: Mapped[str] = mapped_column(
         String(255),
         default="",
         nullable=True,
+        info={"description": "Information about user"},
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
         nullable=False,
+        info={"description": "Account active state"},
     )
 
     auth: Mapped["Auth"] = relationship(

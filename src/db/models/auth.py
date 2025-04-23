@@ -18,11 +18,13 @@ class Auth(Base):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
+        info={"description": "UUID primary key, auto-generated and unique."},
     )
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         unique=True,
         index=True,
+        info={"description": "User's UUID"},
     )
     hashed_password: Mapped[str] = mapped_column(
         String,
@@ -44,31 +46,38 @@ class LoginHistory(Base):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
+        info={"description": "UUID primary key, auto-generated and unique."},
     )
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         index=True,
+        info={"description": "User's UUID"},
     )
 
     created_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow,
         nullable=False,
+        info={"description": "Login datetime"},
     )
     is_active: Mapped[bool] = mapped_column(
         default=True,
         nullable=False,
+        info={"description": "Login active state"},
     )
     device: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
+        info={"description": "Login device"},
     )
     ip: Mapped[str] = mapped_column(
         String(45),
         nullable=False,
+        info={"description": "Login IP"},
     )
     location: Mapped[str] = mapped_column(
         String(100),
         nullable=True,
+        info={"description": "Login location"},
     )
 
     user: Mapped["User"] = relationship(
