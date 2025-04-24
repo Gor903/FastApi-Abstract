@@ -44,8 +44,23 @@ services:
     networks:
       - backend
 
+  minio:
+    image: minio/minio:latest
+    container_name: fastapi-minio
+    command: server /data
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+    volumes:
+      - minio_data:/data
+    networks:
+      - backend
+
 volumes:
   postgres_data:
+  minio_data:
 
 networks:
  backend:
