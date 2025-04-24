@@ -34,6 +34,7 @@ async def register_user(
     await create_email_verification(
         user_id=new_user[1].id,
         user_email=new_user[1].email,
+        db=db,
     )
 
     return new_user

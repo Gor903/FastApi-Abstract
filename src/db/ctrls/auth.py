@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from src.core import settings
 from src.db.services import insert_into_table
-from src.db.models import Auth
+from src.db.models import Auth, EmailVerification
 from src.tasks import send_verification_email_task
 
 
@@ -36,6 +36,7 @@ async def save_password(
 async def create_email_verification(
     user_id: uuid.UUID,
     user_email: str,
+    db: AsyncSession,
 ):
     data = {
         "sub": str(user_id),
@@ -45,6 +46,17 @@ async def create_email_verification(
     token = create_token(
         data,
         expires,
+    )
+
+    model_data = {
+        "user_id": user_id,
+        "token": token,
+    }
+
+    await insert_into_table(
+        model_class=EmailVerification,
+        session=db,
+        schema=model_data,
     )
 
     send_verification_email_task.delay(
