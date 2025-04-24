@@ -2,12 +2,14 @@ import uuid
 import bcrypt
 import asyncio
 import jwt
+from kombu.serialization import register_yaml
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, Union
 from datetime import datetime, timedelta
 
 from src.core import settings
-from src.db.services import insert_into_table
+from src.db.services import get_data_from_table, insert_into_table, update_model
 from src.db.models import Auth, EmailVerification
 from src.tasks import send_verification_email_task
 
@@ -85,6 +87,52 @@ async def verify_password(plain_password: str, hashed_password: str) -> bool:
     )
 
     return is_valid
+
+
+async def get_id_from_email_token(token: str) -> str | None:
+    data = decode_token(token)
+    return data.get("sub")
+
+
+async def verify_email_token(
+    token: str, user_id: uuid.UUID, db: AsyncSession
+) -> tuple[bool | object, str]:
+    query = (
+        select(EmailVerification)
+        .where(EmailVerification.user_id == user_id)
+        .where(EmailVerification.token == token)
+    )
+
+    email_verification = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    if not email_verification:
+        return False, "Verification failed"
+
+    if email_verification.is_used:
+        return False, "Email already verified!"
+
+    if email_verification.expires_at < datetime.utcnow():
+        return False, "Token expired!"
+
+    return email_verification, "Verified successfully!"
+
+
+async def update_email_verification(
+    ev_id: uuid.UUID,
+    data: dict[str, Any],
+    db: AsyncSession,
+):
+    res = await update_model(
+        model_class=EmailVerification,
+        id=ev_id,
+        session=db,
+        schema=data,
+    )
+
+    return res
 
 
 def create_token(data: dict, expires_delta: Union[timedelta, None]) -> str:

@@ -1,7 +1,9 @@
+import uuid
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.services import insert_into_table
-from src.dependencies import db_dependency
+from src.db.services import insert_into_table, get_data_from_table
 from src.db.models import User
 from src.db.ctrls.auth import create_email_verification, save_password
 
@@ -9,7 +11,7 @@ from src.db.ctrls.auth import create_email_verification, save_password
 async def register_user(
     user_data: dict,
     password: str,
-    db: AsyncSession = db_dependency,
+    db: AsyncSession,
 ):
     new_user = await insert_into_table(
         model_class=User,
@@ -38,3 +40,16 @@ async def register_user(
     )
 
     return new_user
+
+
+async def get_user_by_id(
+    user_id: uuid.UUID,
+    db: AsyncSession,
+):
+    query = select(User).where(User.id == user_id)
+    user = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    return user
