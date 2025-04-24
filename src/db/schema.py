@@ -54,6 +54,5 @@ def sqlalchemy_table_to_pydantic(
 
             default = None if (nullable or make_optional) else ...
             fields[_name] = (py_type, Field(default))
-            print(_name)
 
     return create_model(name, **fields)

@@ -1,9 +1,9 @@
-from fastapi import APIRouter
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException
 from starlette import status
 
 from src.db.schemas import register_Request, user_Response
-from src.dependencies import async_session
+from src.dependencies import db_dependency
+from src.db.ctrls import register_user
 
 router = APIRouter(
     prefix="/auth",
@@ -18,8 +18,28 @@ router = APIRouter(
 )
 async def register(
     user: register_Request,
-    db: AsyncSession = async_session,
+    db=db_dependency,
 ):
-    return {
-        "id": "guid",
-    }
+    user_data = user.model_dump()
+
+    password = user_data.get("password")
+    if not password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect request",
+        )
+    user_data.pop("password")
+
+    user = await register_user(
+        user_data=user_data,
+        password=password,
+        db=db,
+    )
+
+    if not user[0]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=user[1],
+        )
+
+    return user[1]
