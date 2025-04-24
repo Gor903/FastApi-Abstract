@@ -53,3 +53,29 @@ async def get_user_by_id(
     )
 
     return user
+
+
+async def get_user_by_email(
+    email: str,
+    db: AsyncSession,
+):
+    query = select(User).where(User.email == email)
+    user = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    return user
+
+
+async def get_user_by_username(
+    username: str,
+    db: AsyncSession,
+):
+    query = select(User).where(User.username == username)
+    user = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    return user
