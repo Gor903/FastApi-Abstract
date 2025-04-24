@@ -2,7 +2,6 @@ import uuid
 import bcrypt
 import asyncio
 import jwt
-from kombu.serialization import register_yaml
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, Union
@@ -118,6 +117,26 @@ async def verify_email_token(
         return False, "Token expired!"
 
     return email_verification, "Verified successfully!"
+
+
+async def get_ev_by_user_id(
+    user_id: uuid.UUID,
+    db: AsyncSession,
+) -> tuple[bool | object, str]:
+    query = select(EmailVerification).where(EmailVerification.user_id == user_id)
+
+    verification = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    if not verification:
+        return False, "Verification not found!"
+
+    if verification.is_used:
+        return False, "Email already verified!"
+
+    return verification, "Verified found successfully!"
 
 
 async def update_email_verification(

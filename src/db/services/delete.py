@@ -6,21 +6,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def delete_record(
-    __model_class__: object,
-    __session__: AsyncSession,
-    __code__: Type[UUID],
-    __auto_commit__: bool = True,
+    model_class: object,
+    session: AsyncSession,
+    id: Type[UUID],
 ):
-    stmt = delete(table=__model_class__).where(
-        __model_class__.code == __code__,
+    stmt = delete(table=model_class).where(
+        model_class.id == id,
     )
 
-    result = await __session__.execute(stmt)
+    result = await session.execute(stmt)
 
     if result.rowcount == 0:
         return False
 
-    if __auto_commit__:
-        await __session__.commit()
+    await session.commit()
 
     return True
