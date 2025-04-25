@@ -8,9 +8,91 @@ from typing import Any, Union
 from datetime import datetime, timedelta
 
 from src.core import settings
+from src.db import models
 from src.db.services import get_data_from_table, insert_into_table, update_model
-from src.db.models import Auth, EmailVerification
+from src.db.models import Auth, EmailVerification, RefreshToken, User
 from src.tasks import send_verification_email_task
+
+
+async def create_auth_tokens(
+    user: User,
+    db: AsyncSession,
+):
+    data = {
+        "sub": user.username,
+        "email": user.email,
+        "id": str(user.id),
+    }
+    exp = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    refresh_token = create_token(
+        data=data,
+        expires_delta=exp,
+    )
+
+    token_hash = await hash_string(refresh_token)
+
+    _refresh_token = await insert_refresh_token(
+        user_id=user.id,
+        token_hash=token_hash,
+        expires_at=datetime.utcnow() + exp,
+        db=db,
+    )
+
+    if not _refresh_token[0]:
+        return _refresh_token[1]
+
+    data["refresh_token_id"] = str(_refresh_token[1].id)
+
+    exp = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    access_token = create_token(
+        data=data,
+        expires_delta=exp,
+    )
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+    }
+
+
+async def insert_refresh_token(
+    user_id: uuid.UUID,
+    token_hash: str,
+    expires_at: datetime,
+    db: AsyncSession,
+):
+    result = await insert_into_table(
+        model_class=RefreshToken,
+        session=db,
+        schema={
+            "user_id": user_id,
+            "token_hash": token_hash,
+            "expires_at": expires_at,
+        },
+    )
+
+    return result
+
+
+async def verify_authorization(
+    user: User,
+    password: str,
+    db: AsyncSession,
+):
+    query = select(Auth.hashed_password).where(Auth.user_id == user.id)
+    hashed_password = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    is_verified = await verify_hashed_string(
+        password,
+        hashed_password,
+    )
+
+    return is_verified
 
 
 async def save_password(
@@ -18,7 +100,7 @@ async def save_password(
     password: str,
     db: AsyncSession,
 ):
-    hashed_password = await hash_password(password)
+    hashed_password = await hash_string(password)
 
     auth_data = {
         "user_id": user_id,
@@ -68,21 +150,21 @@ async def create_email_verification(
     return {"message": "Email verification sent!"}
 
 
-async def hash_password(password: str) -> str:
+async def hash_string(value: str) -> str:
     hashed = await asyncio.to_thread(
         bcrypt.hashpw,
-        password.encode(),
+        value.encode(),
         bcrypt.gensalt(),
     )
 
     return hashed.decode()
 
 
-async def verify_password(plain_password: str, hashed_password: str) -> bool:
+async def verify_hashed_string(plain_value: str, hashed_value: str) -> bool:
     is_valid = await asyncio.to_thread(
         bcrypt.checkpw,
-        plain_password.encode(),
-        hashed_password.encode(),
+        plain_value.encode(),
+        hashed_value.encode(),
     )
 
     return is_valid
