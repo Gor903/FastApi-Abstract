@@ -1,6 +1,6 @@
 from typing import Dict, Optional, Set, Type
 
-from pydantic import BaseModel, create_model, Field
+from pydantic import BaseModel, EmailStr, create_model, Field
 from sqlalchemy.orm import InstrumentedAttribute
 
 from src.db import Base
@@ -27,10 +27,13 @@ def sqlalchemy_table_to_pydantic(
         if col_name in rename.keys():
             col_name = rename.get(col_name)
 
-        try:
-            py_type = column.type.python_type
-        except NotImplementedError:
-            py_type = str
+        if col_name.lower() == "email":
+            py_type = EmailStr
+        else:
+            try:
+                py_type = column.type.python_type
+            except NotImplementedError:
+                py_type = str
 
         default = None if (column.nullable or make_optional) else ...
         description = column.info.get("description") if column.info else None
