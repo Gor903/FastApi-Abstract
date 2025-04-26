@@ -11,6 +11,8 @@ from .auth import (
     create_token,
     verify_authorization,
     create_auth_tokens,
+    get_refresh_token,
+    update_refresh_token,
 )
 
 __all__ = [
@@ -24,4 +26,6 @@ __all__ = [
     "create_token",
     "verify_authorization",
     "create_auth_tokens",
+    "get_refresh_token",
+    "update_refresh_token",
 ]

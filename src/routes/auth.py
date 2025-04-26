@@ -7,15 +7,17 @@ from starlette import status
 
 from src.db.ctrls.auth import get_ev_by_user_id
 from src.db.schemas import LoginRequest, LoginResponse, register_Request, user_Response
-from src.dependencies import db_dependency, user_dependency
+from src.dependencies import db_dependency, user_dependency, token_dependency
 from src.db.ctrls import (
     create_auth_tokens,
+    get_refresh_token,
     get_user_by_email,
     get_user_by_username,
     get_user_by_id,
     register_user,
     get_id_from_email_token,
     update_email_verification,
+    update_refresh_token,
     verify_email_token,
     create_token,
     verify_authorization,
@@ -212,6 +214,44 @@ async def login_user(
     )
 
     return tokens
+
+
+@router.post(
+    path="/logout",
+    response_model=bool,
+)
+async def logout(
+    token: token_dependency,
+    db: AsyncSession = db_dependency,
+):
+    refresh_token_id = token.get("refresh_token_id")
+
+    refresh_token = await get_refresh_token(
+        token_id=refresh_token_id,
+        db=db,
+    )
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect access token",
+        )
+
+    update_rt = await update_refresh_token(
+        data={
+            "revoked": True,
+        },
+        id=refresh_token.id,
+        db=db,
+    )
+
+    if not update_rt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Couldn't update",
+        )
+
+    return True
 
 
 @router.get(

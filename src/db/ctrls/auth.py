@@ -14,6 +14,35 @@ from src.db.models import Auth, EmailVerification, RefreshToken, User
 from src.tasks import send_verification_email_task
 
 
+async def get_refresh_token(
+    token_id: uuid.UUID,
+    db: AsyncSession,
+):
+    query = select(RefreshToken).where(RefreshToken.id == token_id)
+    refresh_token = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    return refresh_token
+
+
+# TODO: refactor
+async def update_refresh_token(
+    data: dict,
+    id: uuid.UUID,
+    db: AsyncSession,
+):
+    refresh_token = await update_model(
+        model_class=RefreshToken,
+        id=id,
+        session=db,
+        schema=data,
+    )
+
+    return refresh_token
+
+
 async def create_auth_tokens(
     user: User,
     db: AsyncSession,

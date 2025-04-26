@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from src.db import get_async_session
-from src.db.ctrls import get_user_by_username
+from src.db.ctrls import get_refresh_token, get_user_by_username
 
 from dotenv import load_dotenv
 import os
@@ -19,21 +19,46 @@ ALGORITHM = os.getenv("ALGORITHM")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login/swagger")
 
 
+# TODO: check the token's content
+async def get_token_data(
+    token: Annotated[str, Depends(oauth2_scheme)],
+):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        return payload
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+
+
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: AsyncSession = Depends(get_async_session),
 ):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = await get_token_data(token)
 
         username: str = payload.get("sub")
-        if username is None:
-            raise Exception("Invalid token")
+        refresh_token_id: str = payload.get("refresh_token_id")
+
         user = await get_user_by_username(
             username=username,
             db=db,
         )
 
+        refresh_token = await get_refresh_token(
+            token_id=refresh_token_id,
+            db=db,
+        )
+
+        if not refresh_token:
+            raise Exception("Refresh token not found")
+        if refresh_token.revoked:
+            raise Exception("Refresh token revoked")
         if not user:
             raise Exception("User not found")
 
@@ -47,3 +72,4 @@ async def get_current_user(
 
 
 user_dependency = Annotated[dict, Depends(get_current_user)]
+token_dependency = Annotated[dict, Depends(get_token_data)]
