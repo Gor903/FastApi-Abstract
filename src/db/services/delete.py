@@ -1,8 +1,9 @@
 from typing import Type
 from uuid import UUID
+
+from fastapi import HTTPException
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
 from starlette import status
 
 

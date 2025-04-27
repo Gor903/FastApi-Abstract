@@ -1,20 +1,16 @@
 import uuid
+from datetime import datetime, timedelta
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Any
-from datetime import datetime, timedelta
 
 from src.core import settings
-from src.db.services import get_data_from_table, insert_into_table, update_model
 from src.db.models import Auth, EmailVerification, RefreshToken, User
+from src.db.services import get_data_from_table, insert_into_table, update_model
 from src.tasks import send_verification_email_task
-from src.utils import (
-    hash_refresh_token,
-    hash_password,
-    verify_password,
-    create_token,
-    decode_token,
-)
+from src.utils import (create_token, decode_token, hash_password,
+                       hash_refresh_token, verify_password)
 
 
 async def get_refresh_token(

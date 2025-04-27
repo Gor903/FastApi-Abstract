@@ -1,29 +1,18 @@
-from datetime import timedelta
-
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from src.db.ctrls import (create_access_token, create_refresh_token,
+                          get_id_from_email_token, get_refresh_token,
+                          get_user_by_email, get_user_by_username,
+                          refresh_email_verification, register_user,
+                          update_email_verification, update_refresh_token,
+                          verify_authorization, verify_email_token)
 from src.db.ctrls.auth import get_ev_by_user_id
-from src.db.schemas import LoginRequest, LoginResponse, UserResponse, UserRegister
-from src.dependencies import db_dependency, user_dependency, token_dependency
-from src.db.ctrls import (
-    create_refresh_token,
-    create_access_token,
-    get_refresh_token,
-    get_user_by_email,
-    get_user_by_username,
-    get_user_by_id,
-    register_user,
-    get_id_from_email_token,
-    update_email_verification,
-    update_refresh_token,
-    verify_email_token,
-    verify_authorization,
-    refresh_email_verification,
-)
-
+from src.db.schemas import LoginRequest, LoginResponse, UserRegister, \
+    UserResponse
+from src.dependencies import db_dependency, token_dependency, user_dependency
 
 router = APIRouter(
     prefix="/auth",

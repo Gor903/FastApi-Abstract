@@ -1,8 +1,9 @@
+import os
 from typing import List, Union
+
+from dotenv import load_dotenv
 from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
-from dotenv import load_dotenv
-import os
 
 load_dotenv()
 

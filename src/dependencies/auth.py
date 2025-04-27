@@ -1,6 +1,8 @@
+import os
 from typing import Annotated
 
 import jwt
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,9 +10,6 @@ from starlette import status
 
 from src.db import get_async_session
 from src.db.ctrls import get_refresh_token, get_user_by_username
-
-from dotenv import load_dotenv
-import os
 
 load_dotenv()
 

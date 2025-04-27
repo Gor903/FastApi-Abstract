@@ -1,7 +1,8 @@
 import uuid
+
+from fastapi import HTTPException
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
 from starlette import status
 
 

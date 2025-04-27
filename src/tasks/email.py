@@ -1,7 +1,7 @@
 from celery import shared_task
 
-from src.utils import send_email
 from src.core import settings
+from src.utils import send_email
 
 
 @shared_task

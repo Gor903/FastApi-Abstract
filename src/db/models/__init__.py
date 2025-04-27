@@ -1,5 +1,5 @@
+from .auth import Auth, EmailVerification, LoginHistory, RefreshToken
 from .users import User
-from .auth import Auth, EmailVerification, RefreshToken, LoginHistory
 
 __all__ = [
     "User",

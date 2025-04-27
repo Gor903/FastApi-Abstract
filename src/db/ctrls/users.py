@@ -3,9 +3,9 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.services import insert_into_table, get_data_from_table
-from src.db.models import User
 from src.db.ctrls.auth import create_email_verification, save_password
+from src.db.models import User
+from src.db.services import get_data_from_table, insert_into_table
 
 
 async def register_user(

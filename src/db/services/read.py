@@ -1,9 +1,9 @@
 from typing import List, Type
 
-from pydantic import BaseModel
-from sqlalchemy.orm import Query
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Query
 from starlette import status
 
 

@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr, constr, Field, validator
 import uuid
+
+from pydantic import BaseModel, EmailStr, Field, constr
 
 
 class UserRegister(BaseModel):

@@ -1,6 +1,6 @@
 from typing import Dict, Optional, Set, Type
 
-from pydantic import BaseModel, EmailStr, create_model, Field
+from pydantic import BaseModel, EmailStr, Field, create_model
 from sqlalchemy.orm import InstrumentedAttribute
 
 from src.db import Base
