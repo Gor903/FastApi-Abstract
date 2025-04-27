@@ -49,13 +49,7 @@ async def register(
         db=db,
     )
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=user[1],
-        )
-
-    return user[1]
+    return user
 
 
 @router.post(
@@ -70,22 +64,10 @@ async def resend_verification_email(
         db=db,
     )
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect request",
-        )
-
     verification = await get_ev_by_user_id(
         user_id=user.id,
         db=db,
     )
-
-    if not verification:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect request",
-        )
 
     await refresh_email_verification(
         ev_id=verification.id,
@@ -116,12 +98,6 @@ async def login(
             db=db,
         )
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Wrong username or email",
-        )
-
     ev = await get_ev_by_user_id(
         user_id=user.id,
         db=db,
@@ -149,11 +125,7 @@ async def login(
         user=user,
         db=db,
     )
-    if not refresh_token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Refresh token was not created",
-        )
+
     access_token = await create_access_token(
         user=user,
         refresh_token_id=str(refresh_token[1]),
@@ -177,12 +149,6 @@ async def login_user(
         username=login_data.username,
         db=db,
     )
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Wrong username or email",
-        )
 
     ev = await get_ev_by_user_id(
         user_id=user.id,
@@ -211,11 +177,7 @@ async def login_user(
         user=user,
         db=db,
     )
-    if not refresh_token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Refresh token was not created",
-        )
+
     access_token = await create_access_token(
         user=user,
         refresh_token_id=str(refresh_token[1]),
@@ -256,12 +218,6 @@ async def logout(
         db=db,
     )
 
-    if not update_rt:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Couldn't update",
-        )
-
     return True
 
 
@@ -279,8 +235,6 @@ async def verify_email(
         user_id=id,
         db=db,
     )
-
-    print(verification)
 
     if not verification:
         raise HTTPException(

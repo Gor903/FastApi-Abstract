@@ -1,14 +1,15 @@
-from typing import Dict, Any
-
-from sqlalchemy import update, UUID
+import uuid
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
+from starlette import status
 
 
 async def update_model(
     model_class: object,
-    id: UUID,
+    id: uuid.UUID,
     session: AsyncSession,
-    schema: Dict[str, Any],
+    schema: dict,
 ) -> bool:
     try:
         __result__ = await session.execute(
@@ -18,5 +19,8 @@ async def update_model(
         await session.commit()
 
         return True
-    except Exception:
-        raise False
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )

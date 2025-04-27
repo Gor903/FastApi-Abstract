@@ -17,7 +17,6 @@ from src.utils import (
 )
 
 
-# READY
 async def get_refresh_token(
     token_id: uuid.UUID,
     db: AsyncSession,
@@ -31,7 +30,6 @@ async def get_refresh_token(
     return refresh_token
 
 
-# READY
 async def update_refresh_token(
     data: dict,
     id: uuid.UUID,
@@ -47,7 +45,6 @@ async def update_refresh_token(
     return refresh_token
 
 
-# READY
 async def create_refresh_token(
     user: User,
     db: AsyncSession,
@@ -83,7 +80,6 @@ async def create_refresh_token(
     return refresh_token, refresh_token_db.id
 
 
-# READY
 async def create_access_token(
     user: User,
     refresh_token_id: uuid.UUID,
@@ -103,7 +99,6 @@ async def create_access_token(
     return access_token
 
 
-# READY
 async def insert_refresh_token(
     user_id: uuid.UUID,
     token_hash: str,
@@ -123,7 +118,6 @@ async def insert_refresh_token(
     return result
 
 
-# READY
 async def verify_authorization(
     user: User,
     password: str,
@@ -143,7 +137,6 @@ async def verify_authorization(
     return is_verified
 
 
-# READY
 async def save_password(
     user_id: uuid.UUID,
     password: str,
@@ -180,7 +173,6 @@ async def create_email_verification_token(
     return token
 
 
-# READY
 async def create_email_verification(
     user_id: uuid.UUID,
     user_email: str,
@@ -207,7 +199,6 @@ async def create_email_verification(
     return email_verification
 
 
-# READY
 async def refresh_email_verification(
     ev_id: uuid.UUID,
     user_id: uuid.UUID,
@@ -239,13 +230,11 @@ async def refresh_email_verification(
     return email_verification
 
 
-# READY
 async def get_id_from_email_token(token: str) -> str | None:
     data = decode_token(token)
     return data.get("sub")
 
 
-# READY
 async def verify_email_token(
     token: str,
     user_id: uuid.UUID,
@@ -272,7 +261,6 @@ async def verify_email_token(
     return email_verification
 
 
-# READY
 async def get_ev_by_user_id(
     user_id: uuid.UUID,
     db: AsyncSession,
@@ -287,7 +275,6 @@ async def get_ev_by_user_id(
     return verification
 
 
-# READY
 async def update_email_verification(
     ev_id: uuid.UUID,
     data: dict[str, Any],
