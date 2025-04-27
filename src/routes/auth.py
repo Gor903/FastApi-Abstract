@@ -69,6 +69,12 @@ async def resend_verification_email(
         db=db,
     )
 
+    if verification.is_used:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already verified",
+        )
+
     await refresh_email_verification(
         ev_id=verification.id,
         user_id=user.id,
