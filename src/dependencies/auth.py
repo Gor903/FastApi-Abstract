@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from src.db import get_async_session
-from src.db.ctrls import get_refresh_token, get_user_by_username
+from src.db.ctrls import get_refresh_token_by_id, get_user_by_username
 
 load_dotenv()
 
@@ -49,7 +49,7 @@ async def get_current_user(
             db=db,
         )
 
-        refresh_token = await get_refresh_token(
+        refresh_token = await get_refresh_token_by_id(
             token_id=refresh_token_id,
             db=db,
         )

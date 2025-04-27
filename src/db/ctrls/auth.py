@@ -9,11 +9,16 @@ from src.core import settings
 from src.db.models import Auth, EmailVerification, RefreshToken, User
 from src.db.services import get_data_from_table, insert_into_table, update_model
 from src.tasks import send_verification_email_task
-from src.utils import (create_token, decode_token, hash_password,
-                       hash_refresh_token, verify_password)
+from src.utils import (
+    create_token,
+    decode_token,
+    hash_password,
+    hash_refresh_token,
+    verify_password,
+)
 
 
-async def get_refresh_token(
+async def get_refresh_token_by_id(
     token_id: uuid.UUID,
     db: AsyncSession,
 ):
@@ -284,3 +289,19 @@ async def update_email_verification(
     )
 
     return res
+
+
+async def get_refresh_token_by_token(
+    refresh_token: str,
+    db: AsyncSession,
+):
+    hashed_token = hash_refresh_token(refresh_token)
+
+    query = select(RefreshToken).where(RefreshToken.token_hash == hashed_token)
+
+    refresh_token = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    return refresh_token

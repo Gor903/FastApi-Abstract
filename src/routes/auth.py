@@ -1,17 +1,28 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from src.db.ctrls import (create_access_token, create_refresh_token,
-                          get_id_from_email_token, get_refresh_token,
-                          get_user_by_email, get_user_by_username,
-                          refresh_email_verification, register_user,
-                          update_email_verification, update_refresh_token,
-                          verify_authorization, verify_email_token)
-from src.db.ctrls.auth import get_ev_by_user_id
-from src.db.schemas import LoginRequest, LoginResponse, UserRegister, \
-    UserResponse
+from src.db.ctrls import (
+    create_access_token,
+    create_refresh_token,
+    get_id_from_email_token,
+    get_refresh_token_by_id,
+    get_user_by_email,
+    get_user_by_id,
+    get_user_by_username,
+    refresh_email_verification,
+    register_user,
+    update_email_verification,
+    update_refresh_token,
+    verify_authorization,
+    verify_email_token,
+    get_ev_by_user_id,
+    get_refresh_token_by_token,
+)
+from src.db.schemas import LoginRequest, LoginResponse, UserRegister, UserResponse
 from src.dependencies import db_dependency, token_dependency, user_dependency
 
 router = APIRouter(
@@ -185,6 +196,59 @@ async def login_user(
 
 
 @router.post(
+    path="/refresh",
+    response_model=LoginResponse,
+)
+async def refresh_tokens(
+    refresh_token: str = Body(..., embed=True),
+    db: AsyncSession = db_dependency,
+):
+    refresh_token_db = await get_refresh_token_by_token(
+        refresh_token=refresh_token,
+        db=db,
+    )
+
+    if refresh_token_db.revoked:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Refresh token revoked",
+        )
+
+    refresh_token_id = refresh_token_db.id
+
+    user = await get_user_by_id(
+        user_id=refresh_token_db.user_id,
+        db=db,
+    )
+
+    remaining = refresh_token_db.expires_at - datetime.utcnow()
+    if remaining.total_seconds() < 7200:
+        await update_refresh_token(
+            data={"revoked": True},
+            id=refresh_token_db.id,
+            db=db,
+        )
+
+        refresh_token_db = await create_refresh_token(
+            user=user,
+            db=db,
+        )
+
+        refresh_token_id = str(refresh_token_db[1])
+        refresh_token = refresh_token_db[0]
+
+    access_token = await create_access_token(
+        user=user,
+        refresh_token_id=str(refresh_token_id),
+    )
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+    }
+
+
+@router.post(
     path="/logout",
     response_model=bool,
 )
@@ -194,7 +258,7 @@ async def logout(
 ):
     refresh_token_id = token.get("refresh_token_id")
 
-    refresh_token = await get_refresh_token(
+    refresh_token = await get_refresh_token_by_id(
         token_id=refresh_token_id,
         db=db,
     )
