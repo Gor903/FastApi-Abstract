@@ -14,9 +14,13 @@ class Settings(BaseSettings):
 
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "SuperSecretKey")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    SERVER_SECRET_SALT: str = os.getenv("SERVER_SECRET_SALT")
+    EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS: int = int(
+        os.getenv("EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS", 15)
+    )
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
-    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
 
     # CORS
     CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = [

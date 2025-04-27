@@ -8,11 +8,12 @@ from .auth import (
     get_id_from_email_token,
     verify_email_token,
     update_email_verification,
-    create_token,
     verify_authorization,
-    create_auth_tokens,
     get_refresh_token,
     update_refresh_token,
+    create_refresh_token,
+    create_access_token,
+    refresh_email_verification,
 )
 
 __all__ = [
@@ -23,9 +24,10 @@ __all__ = [
     "get_id_from_email_token",
     "verify_email_token",
     "update_email_verification",
-    "create_token",
     "verify_authorization",
-    "create_auth_tokens",
     "get_refresh_token",
     "update_refresh_token",
+    "create_refresh_token",
+    "create_access_token",
+    "refresh_email_verification",
 ]

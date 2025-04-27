@@ -1,10 +1,10 @@
-from .users import register_Request, user_Response
+from .users import UserRegister, UserResponse
 from .auth import LoginResponse, LoginRequest
 
 
 __all__ = [
-    "register_Request",
-    "user_Response",
+    "UserRegister",
+    "UserResponse",
     "LoginResponse",
     "LoginRequest",
 ]

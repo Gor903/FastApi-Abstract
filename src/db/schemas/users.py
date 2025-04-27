@@ -1,23 +1,55 @@
-from src.db import sqlalchemy_table_to_pydantic
-from src.db.models import User, Auth
+from pydantic import BaseModel, EmailStr, constr, Field, validator
+import uuid
 
 
-register_Request = sqlalchemy_table_to_pydantic(
-    model=User,
-    name="UserRequest",
-    exclude=[
-        "id",
-        "is_active",
-    ],
-    rename={
-        "hashed_password": "password",
-    },
-    extra=[
-        Auth.hashed_password,
-    ],
-)
+class UserRegister(BaseModel):
+    email: EmailStr = Field(
+        ...,
+        description="User's email address. Must be unique and valid.",
+    )
+    username: constr(min_length=3, max_length=50) = Field(
+        ...,
+        description="Unique username for the user. 3-50 characters.",
+    )
+    full_name: constr(min_length=1, max_length=50) = Field(
+        ...,
+        description="User's full name. 1-50 characters.",
+    )
+    password: constr(min_length=8, max_length=128) = Field(
+        ...,
+        description="Password for the account. 8-128 characters.",
+    )
+    bio: constr(max_length=255) = Field(
+        default="",
+        description="Optional short bio about the user. Max 255 characters.",
+    )
 
-user_Response = sqlalchemy_table_to_pydantic(
-    model=User,
-    name="UserResponse",
-)
+    class Config:
+        orm_mode = True
+
+
+class UserResponse(BaseModel):
+    id: uuid.UUID = Field(..., description="Unique identifier for the user (UUID).")
+    email: EmailStr = Field(
+        ...,
+        description="User's email address.",
+    )
+    username: str = Field(
+        ...,
+        description="Unique username of the user.",
+    )
+    full_name: str = Field(
+        ...,
+        description="Full name of the user.",
+    )
+    bio: str = Field(
+        ...,
+        description="Short biography or description of the user.",
+    )
+    is_active: bool = Field(
+        ...,
+        description="Indicates whether the user's account is active.",
+    )
+
+    class Config:
+        orm_mode = True

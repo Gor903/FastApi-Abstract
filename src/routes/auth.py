@@ -6,10 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from src.db.ctrls.auth import get_ev_by_user_id
-from src.db.schemas import LoginRequest, LoginResponse, register_Request, user_Response
+from src.db.schemas import LoginRequest, LoginResponse, UserResponse, UserRegister
 from src.dependencies import db_dependency, user_dependency, token_dependency
 from src.db.ctrls import (
-    create_auth_tokens,
+    create_refresh_token,
+    create_access_token,
     get_refresh_token,
     get_user_by_email,
     get_user_by_username,
@@ -19,10 +20,9 @@ from src.db.ctrls import (
     update_email_verification,
     update_refresh_token,
     verify_email_token,
-    create_token,
     verify_authorization,
+    refresh_email_verification,
 )
-from src.tasks import send_verification_email_task
 
 
 router = APIRouter(
@@ -33,11 +33,11 @@ router = APIRouter(
 
 @router.post(
     path="/register",
-    response_model=user_Response,
+    response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def register(
-    user: register_Request,
+    user: UserRegister,
     db: AsyncSession = db_dependency,
 ):
     user_data = user.model_dump()
@@ -49,7 +49,7 @@ async def register(
         db=db,
     )
 
-    if not user[0]:
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=user[1],
@@ -62,7 +62,8 @@ async def register(
     path="/resend-email",
 )
 async def resend_verification_email(
-    email: str = Body(..., embed=True), db: AsyncSession = db_dependency
+    email: str = Body(..., embed=True),
+    db: AsyncSession = db_dependency,
 ):
     user = await get_user_by_email(
         email=email,
@@ -80,31 +81,17 @@ async def resend_verification_email(
         db=db,
     )
 
-    if not verification[0]:
+    if not verification:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=verification[1],
+            detail="Incorrect request",
         )
 
-    data = {
-        "sub": str(user.id),
-        "type": "email_verification",
-    }
-    expires = timedelta(hours=24)
-    token = create_token(
-        data,
-        expires,
-    )
-
-    await update_email_verification(
-        ev_id=verification[0].id,
-        data={"token": token},
+    await refresh_email_verification(
+        ev_id=verification.id,
+        user_id=user.id,
+        user_email=email,
         db=db,
-    )
-
-    send_verification_email_task.delay(
-        email=user.email,
-        token=token,
     )
 
 
@@ -140,7 +127,7 @@ async def login(
         db=db,
     )
 
-    if not ev[1] == "Email already verified!":
+    if not ev:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email not verified!",
@@ -158,12 +145,24 @@ async def login(
             detail="Incorrect password",
         )
 
-    tokens = await create_auth_tokens(
+    refresh_token = await create_refresh_token(
         user=user,
         db=db,
     )
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Refresh token was not created",
+        )
+    access_token = await create_access_token(
+        user=user,
+        refresh_token_id=str(refresh_token[1]),
+    )
 
-    return tokens
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token[0],
+    }
 
 
 @router.post(
@@ -190,7 +189,7 @@ async def login_user(
         db=db,
     )
 
-    if not ev[1] == "Email already verified!":
+    if not ev:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email not verified!",
@@ -208,12 +207,24 @@ async def login_user(
             detail="Incorrect password",
         )
 
-    tokens = await create_auth_tokens(
+    refresh_token = await create_refresh_token(
         user=user,
         db=db,
     )
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Refresh token was not created",
+        )
+    access_token = await create_access_token(
+        user=user,
+        refresh_token_id=str(refresh_token[1]),
+    )
 
-    return tokens
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token[0],
+    }
 
 
 @router.post(
@@ -269,14 +280,16 @@ async def verify_email(
         db=db,
     )
 
-    if not verification[0]:
+    print(verification)
+
+    if not verification:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=verification[1],
+            detail="Verification Failed",
         )
 
     await update_email_verification(
-        ev_id=verification[0].id,
+        ev_id=verification.id,
         data={"is_used": True},
         db=db,
     )
@@ -284,7 +297,7 @@ async def verify_email(
 
 @router.get(
     path="/me",
-    response_model=user_Response,
+    response_model=UserResponse,
 )
 async def get_me(
     user: user_dependency,

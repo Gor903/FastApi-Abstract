@@ -8,6 +8,7 @@ from src.db.models import User
 from src.db.ctrls.auth import create_email_verification, save_password
 
 
+# READY
 async def register_user(
     user_data: dict,
     password: str,
@@ -21,27 +22,28 @@ async def register_user(
     )
     await db.flush()
 
-    if not new_user[0]:
+    if not new_user:
         return new_user
 
     auth = await save_password(
-        user_id=new_user[1].id,
+        user_id=new_user.id,
         password=password,
         db=db,
     )
 
-    if not auth[0]:
+    if not auth:
         return auth
 
     await create_email_verification(
-        user_id=new_user[1].id,
-        user_email=new_user[1].email,
+        user_id=new_user.id,
+        user_email=new_user.email,
         db=db,
     )
 
     return new_user
 
 
+# READY
 async def get_user_by_id(
     user_id: uuid.UUID,
     db: AsyncSession,
@@ -55,6 +57,7 @@ async def get_user_by_id(
     return user
 
 
+# READY
 async def get_user_by_email(
     email: str,
     db: AsyncSession,
@@ -68,6 +71,7 @@ async def get_user_by_email(
     return user
 
 
+# READY
 async def get_user_by_username(
     username: str,
     db: AsyncSession,
