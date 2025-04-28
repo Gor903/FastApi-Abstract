@@ -40,6 +40,7 @@ class Auth(Base):
         return f"<Auth user_id={self.user_id}>"
 
 
+# For next versions
 class LoginHistory(Base):
     __tablename__ = "login_history"
 
