@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core import settings
 from src.db.models import Auth, EmailVerification, RefreshToken, User
-from src.db.services import get_data_from_table, insert_into_table, update_model
+from src.db.services import delete_record, get_data_from_table, \
+    insert_into_table, update_model
 from src.tasks import send_verification_email_task
 from src.utils import (
     create_token,
@@ -186,6 +187,27 @@ async def update_password(
 
     return res
 
+
+async def logout_everywhere(
+    user_id: uuid.UUID,
+    db: AsyncSession,
+):
+    query = (
+        select(RefreshToken)
+        .where(RefreshToken.user_id == user_id)
+    )
+    logins = await get_data_from_table(
+        query=query,
+        session=db,
+        __get_all__ = True,
+    )
+
+    for login in logins:
+        await delete_record(
+            model_class=RefreshToken,
+            id=login.id,
+            session=db,
+        )
 
 
 async def create_email_verification_token(

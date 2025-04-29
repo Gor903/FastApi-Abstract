@@ -11,6 +11,7 @@ from .auth import (
     get_refresh_token_by_token,
     get_ev_by_user_id,
     update_password,
+    logout_everywhere,
 )
 from .users import (
     get_user_by_email,
@@ -36,4 +37,5 @@ __all__ = [
     "get_refresh_token_by_token",
     "get_ev_by_user_id",
     "update_password",
+    "logout_everywhere",
 ]

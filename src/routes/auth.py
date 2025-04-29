@@ -13,7 +13,7 @@ from src.db.ctrls import (
     get_user_by_email,
     get_user_by_id,
     get_user_by_username,
-    refresh_email_verification,
+    logout_everywhere, refresh_email_verification,
     register_user,
     update_email_verification,
     update_password, update_refresh_token,
@@ -222,6 +222,12 @@ async def reset_password(
         password = new_password,
         db = db,
     )
+
+    if update:
+        await logout_everywhere(
+            user_id = user.id,
+            db=db,
+        )
 
     return update
 
