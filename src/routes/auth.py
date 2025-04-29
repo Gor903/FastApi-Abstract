@@ -16,7 +16,7 @@ from src.db.ctrls import (
     refresh_email_verification,
     register_user,
     update_email_verification,
-    update_refresh_token,
+    update_password, update_refresh_token,
     verify_authorization,
     verify_email_token,
     get_ev_by_user_id,
@@ -193,6 +193,37 @@ async def login_user(
         "access_token": access_token,
         "refresh_token": refresh_token[0],
     }
+
+
+@router.post(
+    path="/reset_password",
+    response_model=bool,
+)
+async def reset_password(
+    user: user_dependency,
+    db: AsyncSession = db_dependency,
+    old_password: str = Body(..., embed=True),
+    new_password: str = Body(..., embed=True),
+):
+    authorized = await verify_authorization(
+        user = user,
+        password = old_password,
+        db = db,
+    )
+
+    if not authorized:
+        raise HTTPException(
+            status_code = status.HTTP_400_BAD_REQUEST,
+            detail = "Incorrect password",
+        )
+
+    update = await update_password(
+        user_id = user.id,
+        password = new_password,
+        db = db,
+    )
+
+    return update
 
 
 @router.post(

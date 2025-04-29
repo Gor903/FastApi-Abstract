@@ -10,6 +10,7 @@ from .auth import (
     verify_email_token,
     get_refresh_token_by_token,
     get_ev_by_user_id,
+    update_password,
 )
 from .users import (
     get_user_by_email,
@@ -34,4 +35,5 @@ __all__ = [
     "refresh_email_verification",
     "get_refresh_token_by_token",
     "get_ev_by_user_id",
+    "update_password",
 ]

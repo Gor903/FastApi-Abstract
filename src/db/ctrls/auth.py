@@ -159,6 +159,35 @@ async def save_password(
     return auth
 
 
+async def update_password(
+    user_id: uuid.UUID,
+    password: str,
+    db: AsyncSession,
+):
+    query = (
+        select(Auth)
+        .where(Auth.user_id == user_id)
+    )
+    auth = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    hashed_password = await hash_password(password)
+
+    res = await update_model(
+        model_class=Auth,
+        id=auth.id,
+        schema={
+            "hashed_password": hashed_password,
+        },
+        session=db,
+    )
+
+    return res
+
+
+
 async def create_email_verification_token(
     user_id: uuid.UUID,
 ):
