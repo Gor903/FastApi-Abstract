@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "SuperSecretKey")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     SERVER_SECRET_SALT: str = os.getenv("SERVER_SECRET_SALT")
+    OTP_LENGTH: int = int(os.getenv("OTP_LENGTH", 8))
     EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS: int = int(
         os.getenv("EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS", 15)
     )

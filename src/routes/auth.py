@@ -3,20 +3,24 @@ from datetime import datetime
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import user
 from starlette import status
 
 from src.db.ctrls import (
     create_access_token,
+    create_and_send_otp,
     create_refresh_token,
     get_id_from_email_token,
     get_refresh_token_by_id,
     get_user_by_email,
     get_user_by_id,
     get_user_by_username,
-    logout_everywhere, refresh_email_verification,
+    logout_everywhere,
+    refresh_email_verification,
     register_user,
     update_email_verification,
-    update_password, update_refresh_token,
+    update_password,
+    update_refresh_token,
     verify_authorization,
     verify_email_token,
     get_ev_by_user_id,
@@ -81,6 +85,34 @@ async def resend_verification_email(
         user_email=email,
         db=db,
     )
+
+
+@router.post(
+    path="/send_otp",
+    response_model=bool,
+)
+async def send_otp(
+    email: str = Body(..., embed=True),
+    db: AsyncSession = db_dependency,
+):
+    user = await get_user_by_email(
+        email=email,
+        db=db,
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email not found",
+        )
+
+    res = await create_and_send_otp(
+        user_id=user.id,
+        email=email,
+        db=db,
+    )
+
+    return res
 
 
 @router.post(
@@ -206,26 +238,26 @@ async def reset_password(
     new_password: str = Body(..., embed=True),
 ):
     authorized = await verify_authorization(
-        user = user,
-        password = old_password,
-        db = db,
+        user=user,
+        password=old_password,
+        db=db,
     )
 
     if not authorized:
         raise HTTPException(
-            status_code = status.HTTP_400_BAD_REQUEST,
-            detail = "Incorrect password",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect password",
         )
 
     update = await update_password(
-        user_id = user.id,
-        password = new_password,
-        db = db,
+        user_id=user.id,
+        password=new_password,
+        db=db,
     )
 
     if update:
         await logout_everywhere(
-            user_id = user.id,
+            user_id=user.id,
             db=db,
         )
 

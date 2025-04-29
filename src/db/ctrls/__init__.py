@@ -12,6 +12,7 @@ from .auth import (
     get_ev_by_user_id,
     update_password,
     logout_everywhere,
+    create_and_send_otp,
 )
 from .users import (
     get_user_by_email,
@@ -38,4 +39,5 @@ __all__ = [
     "get_ev_by_user_id",
     "update_password",
     "logout_everywhere",
+    "create_and_send_otp",
 ]

@@ -167,3 +167,34 @@ class EmailVerification(Base):
 
     def __repr__(self):
         return f"<EmailVerification id={self.id} user_id={self.user_id}>"
+
+
+class OTPVerification(Base):
+    __tablename__ = "otp_verification"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+    )
+    hashed_otp: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    is_verified: Mapped[bool] = mapped_column(
+        default=False,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.utcnow() + timedelta(minutes=10),
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship(
+        back_populates="otp_verification",
+    )

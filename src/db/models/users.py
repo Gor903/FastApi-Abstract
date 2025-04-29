@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db import Base
+from src.db.models.auth import OTPVerification
 
 if TYPE_CHECKING:
     from src.db.models import EmailVerification
@@ -64,6 +65,9 @@ class User(Base):
         back_populates="user",
     )
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        back_populates="user",
+    )
+    otp_verification: Mapped[list["OTPVerification"]] = relationship(
         back_populates="user",
     )
 

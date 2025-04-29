@@ -10,3 +10,10 @@ def send_verification_email_task(email: str, token: str):
     subject = "Verify your email"
     body = f"Click the link to verify your email:\n\n{url}"
     send_email(to=email, subject=subject, body=body)
+
+
+@shared_task
+def send_otp_email_task(email: str, otp: str):
+    subject = "Verify your otp"
+    body = f"This is your one time password.\n\n{otp}"
+    send_email(to=email, subject=subject, body=body)

@@ -1,5 +1,7 @@
+import string
 import uuid
 from datetime import datetime, timedelta
+import random
 from typing import Any
 
 from sqlalchemy import select
@@ -7,9 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core import settings
 from src.db.models import Auth, EmailVerification, RefreshToken, User
-from src.db.services import delete_record, get_data_from_table, \
-    insert_into_table, update_model
-from src.tasks import send_verification_email_task
+from src.db.models.auth import OTPVerification
+from src.db.services import (
+    delete_record,
+    get_data_from_table,
+    insert_into_table,
+    update_model,
+)
+from src.tasks import send_otp_email_task, send_verification_email_task
 from src.utils import (
     create_token,
     decode_token,
@@ -165,10 +172,7 @@ async def update_password(
     password: str,
     db: AsyncSession,
 ):
-    query = (
-        select(Auth)
-        .where(Auth.user_id == user_id)
-    )
+    query = select(Auth).where(Auth.user_id == user_id)
     auth = await get_data_from_table(
         query=query,
         session=db,
@@ -192,14 +196,11 @@ async def logout_everywhere(
     user_id: uuid.UUID,
     db: AsyncSession,
 ):
-    query = (
-        select(RefreshToken)
-        .where(RefreshToken.user_id == user_id)
-    )
+    query = select(RefreshToken).where(RefreshToken.user_id == user_id)
     logins = await get_data_from_table(
         query=query,
         session=db,
-        __get_all__ = True,
+        __get_all__=True,
     )
 
     for login in logins:
@@ -208,6 +209,37 @@ async def logout_everywhere(
             id=login.id,
             session=db,
         )
+
+
+def generate_otp(length=settings.OTP_LENGTH):
+    """Generate a numeric OTP of specified length"""
+    return "".join(random.choices(string.digits, k=length))
+
+
+async def create_and_send_otp(
+    user_id: uuid.UUID,
+    email: str,
+    db: AsyncSession,
+):
+    otp = generate_otp()
+
+    hashed_otp = await hash_password(otp)
+
+    await insert_into_table(
+        model_class=OTPVerification,
+        session=db,
+        schema={
+            "user_id": user_id,
+            "hashed_otp": hashed_otp,
+        },
+    )
+
+    send_otp_email_task.delay(
+        email=email,
+        otp=otp,
+    )
+
+    return True
 
 
 async def create_email_verification_token(
