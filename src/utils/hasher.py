@@ -2,7 +2,7 @@ import asyncio
 import bcrypt
 import hashlib
 
-from src.core import settings
+from core import settings
 
 
 async def hash_password(password: str) -> str:

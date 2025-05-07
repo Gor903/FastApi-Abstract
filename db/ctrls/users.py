@@ -3,9 +3,9 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.ctrls.auth import create_email_verification, save_password
-from src.db.models import User
-from src.db.services import get_data_from_table, insert_into_table
+from db.ctrls.auth import save_password, create_and_send_otp
+from db.models import User
+from db.services import get_data_from_table, insert_into_table, update_model
 
 
 async def register_user(
@@ -27,13 +27,45 @@ async def register_user(
         db=db,
     )
 
-    await create_email_verification(
+    await create_and_send_otp(
         user_id=new_user.id,
-        user_email=new_user.email,
+        email=new_user.email,
         db=db,
     )
 
     return new_user
+
+
+async def verify_user(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    value: bool = True,
+):
+    await update_model(
+        model_class=User,
+        id=user_id,
+        session=db,
+        schema={
+            "is_verified": value,
+        },
+    )
+
+    return True
+
+
+async def update_user(
+    user_id: uuid.UUID,
+    data: dict,
+    db: AsyncSession,
+):
+    await update_model(
+        model_class=User,
+        id=user_id,
+        schema=data,
+        session=db,
+    )
+
+    return True
 
 
 async def get_user_by_id(

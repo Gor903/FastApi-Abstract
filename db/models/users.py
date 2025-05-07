@@ -1,15 +1,10 @@
 import uuid
-from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.db import Base
-from src.db.models.auth import OTPVerification
-
-if TYPE_CHECKING:
-    from src.db.models import EmailVerification
+from db import Base
 
 
 class User(Base):
@@ -53,11 +48,14 @@ class User(Base):
         info={"description": "Account active state"},
     )
 
-    auth: Mapped["Auth"] = relationship(
-        back_populates="user",
-        uselist=False,
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        info={"description": "Account verification state"},
     )
-    email_verification: Mapped["EmailVerification"] = relationship(
+
+    auth: Mapped["Auth"] = relationship(
         back_populates="user",
         uselist=False,
     )

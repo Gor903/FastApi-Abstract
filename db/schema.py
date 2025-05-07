@@ -3,7 +3,7 @@ from typing import Dict, Optional, Set, Type
 from pydantic import BaseModel, EmailStr, Field, create_model
 from sqlalchemy.orm import InstrumentedAttribute
 
-from src.db import Base
+from db import Base
 
 
 def sqlalchemy_table_to_pydantic(

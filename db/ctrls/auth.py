@@ -1,22 +1,21 @@
+import random
 import string
 import uuid
 from datetime import datetime, timedelta
-import random
-from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core import settings
-from src.db.models import Auth, EmailVerification, RefreshToken, User
-from src.db.models.auth import OTPVerification
-from src.db.services import (
+from core import settings
+from db.models import Auth, RefreshToken, User
+from db.models.auth import OTPVerification
+from db.services import (
     delete_record,
     get_data_from_table,
     insert_into_table,
     update_model,
 )
-from src.tasks import send_otp_email_task, send_verification_email_task
+from src.tasks import send_otp_email_task
 from src.utils import (
     create_token,
     decode_token,
@@ -146,6 +145,25 @@ async def verify_authorization(
     return is_verified
 
 
+async def verify_otp(
+    user_id: uuid.UUID,
+    otp: str,
+    db: AsyncSession,
+):
+    query = select(OTPVerification).where(OTPVerification.user_id == user_id)
+    otp_db = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    is_verified = await verify_password(
+        plain_password=otp,
+        hashed_password=otp_db.hashed_otp,
+    )
+
+    return is_verified
+
+
 async def save_password(
     user_id: uuid.UUID,
     password: str,
@@ -257,121 +275,9 @@ async def create_email_verification_token(
     return token
 
 
-async def create_email_verification(
-    user_id: uuid.UUID,
-    user_email: str,
-    db: AsyncSession,
-):
-    token = await create_email_verification_token(
-        user_id=user_id,
-    )
-
-    email_verification = await insert_into_table(
-        model_class=EmailVerification,
-        session=db,
-        schema={
-            "user_id": user_id,
-            "token": token,
-        },
-    )
-
-    send_verification_email_task.delay(
-        email=user_email,
-        token=token,
-    )
-
-    return email_verification
-
-
-async def refresh_email_verification(
-    ev_id: uuid.UUID,
-    user_id: uuid.UUID,
-    user_email: str,
-    db: AsyncSession,
-):
-    token = await create_email_verification_token(
-        user_id=user_id,
-    )
-
-    email_verification = await update_email_verification(
-        ev_id=ev_id,
-        data={
-            "token": token,
-            "expires_at": datetime.utcnow()
-            + timedelta(
-                hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS,
-            ),
-            "created_at": datetime.utcnow(),
-        },
-        db=db,
-    )
-
-    send_verification_email_task.delay(
-        email=user_email,
-        token=token,
-    )
-
-    return email_verification
-
-
 async def get_id_from_email_token(token: str) -> str | None:
     data = decode_token(token)
     return data.get("sub")
-
-
-async def verify_email_token(
-    token: str,
-    user_id: uuid.UUID,
-    db: AsyncSession,
-):
-    query = (
-        select(EmailVerification)
-        .where(EmailVerification.user_id == user_id)
-        .where(EmailVerification.token == token)
-    )
-
-    email_verification = await get_data_from_table(
-        query=query,
-        session=db,
-    )
-
-    if (
-        not email_verification
-        or email_verification.is_used
-        or email_verification.expires_at < datetime.utcnow()
-    ):
-        return False
-
-    return email_verification
-
-
-async def get_ev_by_user_id(
-    user_id: uuid.UUID,
-    db: AsyncSession,
-):
-    query = select(EmailVerification).where(EmailVerification.user_id == user_id)
-
-    verification = await get_data_from_table(
-        query=query,
-        session=db,
-    )
-
-    return verification
-
-
-async def update_email_verification(
-    ev_id: uuid.UUID,
-    data: dict[str, Any],
-    db: AsyncSession,
-):
-    res = await update_model(
-        model_class=EmailVerification,
-        id=ev_id,
-        session=db,
-        schema=data,
-    )
-
-    return res
 
 
 async def get_refresh_token_by_token(

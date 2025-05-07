@@ -6,10 +6,10 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.db import Base
+from db import Base
 
 if TYPE_CHECKING:
-    from src.db.models import User
+    from db.models import User
 
 
 class Auth(Base):
@@ -129,46 +129,6 @@ class RefreshToken(Base):
         return f"<RefreshToken id={self.id} user_id={self.user_id}>"
 
 
-class EmailVerification(Base):
-    __tablename__ = "email_verification"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
-        index=True,
-    )
-
-    token: Mapped[str] = mapped_column(
-        String(255),
-        unique=True,
-        index=True,
-        nullable=False,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
-        nullable=False,
-    )
-    expires_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow() + timedelta(hours=24),
-        nullable=False,
-    )
-    is_used: Mapped[bool] = mapped_column(
-        default=False,
-        nullable=False,
-    )
-
-    user: Mapped["User"] = relationship(
-        back_populates="email_verification",
-    )
-
-    def __repr__(self):
-        return f"<EmailVerification id={self.id} user_id={self.user_id}>"
-
-
 class OTPVerification(Base):
     __tablename__ = "otp_verification"
 
@@ -186,9 +146,6 @@ class OTPVerification(Base):
         unique=True,
         index=True,
         nullable=False,
-    )
-    is_verified: Mapped[bool] = mapped_column(
-        default=False,
     )
     expires_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.utcnow() + timedelta(minutes=10),

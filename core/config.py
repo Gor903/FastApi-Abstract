@@ -18,9 +18,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     SERVER_SECRET_SALT: str = os.getenv("SERVER_SECRET_SALT")
     OTP_LENGTH: int = int(os.getenv("OTP_LENGTH", 8))
-    EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS: int = int(
-        os.getenv("EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS", 15)
-    )
+    OTP_EXPIRES_MINUTES: int = int(os.getenv("OTP_EXPIRES_MINUTES", 10))
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
 
@@ -30,7 +28,7 @@ class Settings(BaseSettings):
         "http://localhost:8000",
     ]
 
-    # Service: Database
+    # Service: DB PostgreSQL
     DATABASE_URL: str = (
         "postgresql+asyncpg://"
         + f"{os.getenv('POSTGRES_USER')}:"

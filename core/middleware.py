@@ -3,7 +3,7 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.core import settings
+from core import settings
 
 
 def setup_middlewares(app: FastAPI) -> None:

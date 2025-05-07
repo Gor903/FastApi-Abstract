@@ -2,8 +2,8 @@ from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.core import settings
-from src.db import Base
+from core import settings
+from db import Base
 
 engine = create_async_engine(
     settings.DATABASE_URL,

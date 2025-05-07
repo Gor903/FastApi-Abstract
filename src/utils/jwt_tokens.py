@@ -2,7 +2,7 @@ import jwt
 from datetime import datetime, timedelta
 from typing import Union, Any
 
-from src.core import settings
+from core import settings
 
 
 def create_token(data: dict, expires_delta: Union[timedelta, None]) -> str:

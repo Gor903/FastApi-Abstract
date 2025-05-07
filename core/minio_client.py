@@ -1,6 +1,6 @@
 from minio import Minio
 
-from src.core import settings
+from core import settings
 
 _minio = Minio(
     endpoint=settings.MINIO_ENDPOINT,

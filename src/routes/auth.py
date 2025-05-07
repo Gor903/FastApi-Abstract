@@ -1,32 +1,32 @@
+import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import user
 from starlette import status
 
-from src.db.ctrls import (
+from db.ctrls.auth import (
     create_access_token,
     create_and_send_otp,
     create_refresh_token,
-    get_id_from_email_token,
     get_refresh_token_by_id,
-    get_user_by_email,
-    get_user_by_id,
-    get_user_by_username,
+    get_refresh_token_by_token,
     logout_everywhere,
-    refresh_email_verification,
-    register_user,
-    update_email_verification,
     update_password,
     update_refresh_token,
     verify_authorization,
-    verify_email_token,
-    get_ev_by_user_id,
-    get_refresh_token_by_token,
 )
-from src.db.schemas import LoginRequest, LoginResponse, UserRegister, UserResponse
+from db.ctrls.users import (
+    get_user_by_email,
+    get_user_by_id,
+    get_user_by_username,
+    register_user,
+)
+
+from db.ctrls import users as ctrls_users
+from db.ctrls import auth as ctrls_auth
+from db.schemas import LoginRequest, LoginResponse, UserRegister, UserResponse
 from src.dependencies import db_dependency, token_dependency, user_dependency
 
 router = APIRouter(
@@ -57,34 +57,36 @@ async def register(
 
 
 @router.post(
-    path="/resend-email",
+    path="/verify_otp",
+    response_model=bool,
+    status_code=status.HTTP_200_OK,
 )
-async def resend_verification_email(
-    email: str = Body(..., embed=True),
+async def verify_otp(
+    user_id: uuid.UUID = Body(..., embed=True),
+    otp: str = Body(..., embed=True),
     db: AsyncSession = db_dependency,
 ):
-    user = await get_user_by_email(
-        email=email,
+    verified = await ctrls_auth.verify_otp(
+        user_id=user_id,
+        otp=otp,
         db=db,
     )
 
-    verification = await get_ev_by_user_id(
-        user_id=user.id,
-        db=db,
-    )
-
-    if verification.is_used:
+    if not verified:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already verified",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect otp",
         )
 
-    await refresh_email_verification(
-        ev_id=verification.id,
-        user_id=user.id,
-        user_email=email,
+    await ctrls_users.update_user(
+        user_id=user_id,
+        data={
+            "is_verified": True,
+        },
         db=db,
     )
+
+    return True
 
 
 @router.post(
@@ -136,15 +138,10 @@ async def login(
             db=db,
         )
 
-    ev = await get_ev_by_user_id(
-        user_id=user.id,
-        db=db,
-    )
-
-    if not ev:
+    if not user.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email not verified!",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Your email is not verified",
         )
 
     authorized = await verify_authorization(
@@ -188,15 +185,10 @@ async def login_user(
         db=db,
     )
 
-    ev = await get_ev_by_user_id(
-        user_id=user.id,
-        db=db,
-    )
-
-    if not ev:
+    if not user.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email not verified!",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Your email is not verified",
         )
 
     authorized = await verify_authorization(
@@ -347,34 +339,6 @@ async def logout(
     )
 
     return True
-
-
-@router.get(
-    path="/verify_email",
-)
-async def verify_email(
-    token: str = Query(...),
-    db: AsyncSession = db_dependency,
-):
-    id = await get_id_from_email_token(token=token)
-
-    verification = await verify_email_token(
-        token=token,
-        user_id=id,
-        db=db,
-    )
-
-    if not verification:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Verification Failed",
-        )
-
-    await update_email_verification(
-        ev_id=verification.id,
-        data={"is_used": True},
-        db=db,
-    )
 
 
 @router.get(

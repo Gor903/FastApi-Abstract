@@ -8,8 +8,9 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from src.db import get_async_session
-from src.db.ctrls import get_refresh_token_by_id, get_user_by_username
+from db import get_async_session
+from db.ctrls.users import get_user_by_username
+from db.ctrls.auth import get_refresh_token_by_id
 
 load_dotenv()
 

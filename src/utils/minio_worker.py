@@ -1,7 +1,7 @@
 import io
 import uuid
 
-from src.core import minio, settings
+from core import minio, settings
 
 
 def upload_image(
