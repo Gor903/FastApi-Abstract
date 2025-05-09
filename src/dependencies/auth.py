@@ -11,6 +11,7 @@ from starlette import status
 from db import get_async_session
 from db.ctrls.users import get_user_by_username
 from db.ctrls.auth import get_refresh_token_by_id
+from src.utils import decode_token
 
 load_dotenv()
 
@@ -24,7 +25,7 @@ async def get_token_data(
     token: Annotated[str, Depends(oauth2_scheme)],
 ):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = decode_token(token)
 
         return payload
 
@@ -50,6 +51,9 @@ async def get_current_user(
             db=db,
         )
 
+        if not user:
+            raise Exception("User not found")
+
         refresh_token = await get_refresh_token_by_id(
             token_id=refresh_token_id,
             db=db,
@@ -59,8 +63,6 @@ async def get_current_user(
             raise Exception("Refresh token not found")
         if refresh_token.revoked:
             raise Exception("Refresh token revoked")
-        if not user:
-            raise Exception("User not found")
 
         return user
 

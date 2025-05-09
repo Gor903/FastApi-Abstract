@@ -2,6 +2,8 @@ import random
 import string
 import uuid
 from datetime import datetime, timedelta
+from fastapi import HTTPException
+from starlette import status
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -150,18 +152,40 @@ async def verify_otp(
     otp: str,
     db: AsyncSession,
 ):
-    query = select(OTPVerification).where(OTPVerification.user_id == user_id)
+    query = (
+        select(OTPVerification)
+        .where(OTPVerification.user_id == user_id)
+        .where(OTPVerification.is_used == False)
+    )
+
     otp_db = await get_data_from_table(
         query=query,
         session=db,
     )
+
+    if not otp_db:
+        raise HTTPException(
+            status_code = status.HTTP_400_BAD_REQUEST,
+            detail = f"User with id:'{user_id}' does not have an OTP token",
+        )
 
     is_verified = await verify_password(
         plain_password=otp,
         hashed_password=otp_db.hashed_otp,
     )
 
-    return is_verified
+    await update_model(
+        model_class=OTPVerification,
+        id=otp_db.id,
+        schema = {
+            "is_used": True,
+        },
+        session=db,
+    )
+
+    return is_verified and otp_db.expires_at > datetime.utcnow()
+
+
 
 
 async def save_password(

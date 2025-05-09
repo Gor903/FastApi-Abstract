@@ -147,6 +147,10 @@ class OTPVerification(Base):
         index=True,
         nullable=False,
     )
+    is_used: Mapped[bool] = mapped_column(
+        default=False,
+        nullable = True,
+    )
     expires_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.utcnow() + timedelta(minutes=10),
         nullable=False,

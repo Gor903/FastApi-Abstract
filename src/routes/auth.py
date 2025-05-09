@@ -137,6 +137,11 @@ async def login(
             username=username,
             db=db,
         )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found",
+        )
 
     if not user.is_verified:
         raise HTTPException(
@@ -257,6 +262,55 @@ async def reset_password(
 
 
 @router.post(
+    path="/reset_password/otp",
+    response_model=bool,
+)
+async def reset_password_otp(
+    user_id: uuid.UUID = Body(..., embed=True),
+    otp: str = Body(..., embed=True),
+    new_password: str = Body(..., embed=True),
+    db: AsyncSession = db_dependency,
+):
+    user = await ctrls_users.get_user_by_id(
+        user_id, db
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found",
+        )
+
+    verified = await ctrls_auth.verify_otp(
+        user_id = user_id,
+        otp = otp,
+        db = db,
+    )
+
+    if not verified:
+        raise HTTPException(
+            status_code = status.HTTP_401_UNAUTHORIZED,
+            detail = "Incorrect otp",
+        )
+
+    update = await update_password(
+        user_id = user.id,
+        password = new_password,
+        db = db,
+    )
+
+    if update:
+        await logout_everywhere(
+            user_id = user.id,
+            db = db,
+        )
+
+    return update
+
+
+
+
+@router.post(
     path="/refresh",
     response_model=LoginResponse,
 )
@@ -268,6 +322,12 @@ async def refresh_tokens(
         refresh_token=refresh_token,
         db=db,
     )
+
+    if not refresh_token_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Refresh token not found",
+        )
 
     if refresh_token_db.revoked:
         raise HTTPException(
@@ -330,7 +390,7 @@ async def logout(
             detail="Incorrect access token",
         )
 
-    update_rt = await update_refresh_token(
+    await update_refresh_token(
         data={
             "revoked": True,
         },
