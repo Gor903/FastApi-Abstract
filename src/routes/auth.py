@@ -6,24 +6,6 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from db.ctrls.auth import (
-    create_access_token,
-    create_and_send_otp,
-    create_refresh_token,
-    get_refresh_token_by_id,
-    get_refresh_token_by_token,
-    logout_everywhere,
-    update_password,
-    update_refresh_token,
-    verify_authorization,
-)
-from db.ctrls.users import (
-    get_user_by_email,
-    get_user_by_id,
-    get_user_by_username,
-    register_user,
-)
-
 from db.ctrls import users as ctrls_users
 from db.ctrls import auth as ctrls_auth
 from db.schemas import LoginRequest, LoginResponse, UserRegister, UserResponse
@@ -47,7 +29,7 @@ async def register(
     user_data = user.model_dump()
     password = user_data.pop("password")
 
-    user = await register_user(
+    user = await ctrls_users.register_user(
         user_data=user_data,
         password=password,
         db=db,
@@ -97,7 +79,7 @@ async def send_otp(
     email: str = Body(..., embed=True),
     db: AsyncSession = db_dependency,
 ):
-    user = await get_user_by_email(
+    user = await ctrls_users.get_user_by_email(
         email=email,
         db=db,
     )
@@ -108,7 +90,7 @@ async def send_otp(
             detail="Email not found",
         )
 
-    res = await create_and_send_otp(
+    res = await ctrls_auth.create_and_send_otp(
         user_id=user.id,
         email=email,
         db=db,
@@ -128,12 +110,12 @@ async def login(
     login_data = login_data.model_dump()
 
     if email := login_data.get("email"):
-        user = await get_user_by_email(
+        user = await ctrls_users.get_user_by_email(
             email=email,
             db=db,
         )
     elif username := login_data.get("username"):
-        user = await get_user_by_username(
+        user = await ctrls_users.get_user_by_username(
             username=username,
             db=db,
         )
@@ -149,7 +131,7 @@ async def login(
             detail="Your email is not verified",
         )
 
-    authorized = await verify_authorization(
+    authorized = await ctrls_auth.verify_authorization(
         user=user,
         password=login_data.get("password"),
         db=db,
@@ -161,12 +143,12 @@ async def login(
             detail="Incorrect password",
         )
 
-    refresh_token = await create_refresh_token(
+    refresh_token = await ctrls_auth.create_refresh_token(
         user=user,
         db=db,
     )
 
-    access_token = await create_access_token(
+    access_token = await ctrls_auth.create_access_token(
         user=user,
         refresh_token_id=str(refresh_token[1]),
     )
@@ -185,7 +167,7 @@ async def login_user(
     login_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = db_dependency,
 ):
-    user = await get_user_by_username(
+    user = await ctrls_users.get_user_by_username(
         username=login_data.username,
         db=db,
     )
@@ -196,7 +178,7 @@ async def login_user(
             detail="Your email is not verified",
         )
 
-    authorized = await verify_authorization(
+    authorized = await ctrls_auth.verify_authorization(
         user=user,
         password=login_data.password,
         db=db,
@@ -208,12 +190,12 @@ async def login_user(
             detail="Incorrect password",
         )
 
-    refresh_token = await create_refresh_token(
+    refresh_token = await ctrls_auth.create_refresh_token(
         user=user,
         db=db,
     )
 
-    access_token = await create_access_token(
+    access_token = await ctrls_auth.create_access_token(
         user=user,
         refresh_token_id=str(refresh_token[1]),
     )
@@ -234,7 +216,7 @@ async def reset_password(
     old_password: str = Body(..., embed=True),
     new_password: str = Body(..., embed=True),
 ):
-    authorized = await verify_authorization(
+    authorized = await ctrls_auth.verify_authorization(
         user=user,
         password=old_password,
         db=db,
@@ -246,14 +228,14 @@ async def reset_password(
             detail="Incorrect password",
         )
 
-    update = await update_password(
+    update = await ctrls_auth.update_password(
         user_id=user.id,
         password=new_password,
         db=db,
     )
 
     if update:
-        await logout_everywhere(
+        await ctrls_auth.logout_everywhere(
             user_id=user.id,
             db=db,
         )
@@ -271,9 +253,7 @@ async def reset_password_otp(
     new_password: str = Body(..., embed=True),
     db: AsyncSession = db_dependency,
 ):
-    user = await ctrls_users.get_user_by_id(
-        user_id, db
-    )
+    user = await ctrls_users.get_user_by_id(user_id, db)
 
     if not user:
         raise HTTPException(
@@ -282,32 +262,30 @@ async def reset_password_otp(
         )
 
     verified = await ctrls_auth.verify_otp(
-        user_id = user_id,
-        otp = otp,
-        db = db,
+        user_id=user_id,
+        otp=otp,
+        db=db,
     )
 
     if not verified:
         raise HTTPException(
-            status_code = status.HTTP_401_UNAUTHORIZED,
-            detail = "Incorrect otp",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect otp",
         )
 
-    update = await update_password(
-        user_id = user.id,
-        password = new_password,
-        db = db,
+    update = await ctrls_auth.update_password(
+        user_id=user.id,
+        password=new_password,
+        db=db,
     )
 
     if update:
-        await logout_everywhere(
-            user_id = user.id,
-            db = db,
+        await ctrls_auth.logout_everywhere(
+            user_id=user.id,
+            db=db,
         )
 
     return update
-
-
 
 
 @router.post(
@@ -318,7 +296,7 @@ async def refresh_tokens(
     refresh_token: str = Body(..., embed=True),
     db: AsyncSession = db_dependency,
 ):
-    refresh_token_db = await get_refresh_token_by_token(
+    refresh_token_db = await ctrls_auth.get_refresh_token_by_token(
         refresh_token=refresh_token,
         db=db,
     )
@@ -337,20 +315,20 @@ async def refresh_tokens(
 
     refresh_token_id = refresh_token_db.id
 
-    user = await get_user_by_id(
+    user = await ctrls_users.get_user_by_id(
         user_id=refresh_token_db.user_id,
         db=db,
     )
 
     remaining = refresh_token_db.expires_at - datetime.utcnow()
     if remaining.total_seconds() < 7200:
-        await update_refresh_token(
+        await ctrls_auth.update_refresh_token(
             data={"revoked": True},
             id=refresh_token_db.id,
             db=db,
         )
 
-        refresh_token_db = await create_refresh_token(
+        refresh_token_db = await ctrls_auth.create_refresh_token(
             user=user,
             db=db,
         )
@@ -358,7 +336,7 @@ async def refresh_tokens(
         refresh_token_id = str(refresh_token_db[1])
         refresh_token = refresh_token_db[0]
 
-    access_token = await create_access_token(
+    access_token = await ctrls_auth.create_access_token(
         user=user,
         refresh_token_id=str(refresh_token_id),
     )
@@ -379,7 +357,7 @@ async def logout(
 ):
     refresh_token_id = token.get("refresh_token_id")
 
-    refresh_token = await get_refresh_token_by_id(
+    refresh_token = await ctrls_auth.get_refresh_token_by_id(
         token_id=refresh_token_id,
         db=db,
     )
@@ -390,7 +368,7 @@ async def logout(
             detail="Incorrect access token",
         )
 
-    await update_refresh_token(
+    await ctrls_auth.update_refresh_token(
         data={
             "revoked": True,
         },

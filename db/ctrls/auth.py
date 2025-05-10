@@ -165,8 +165,8 @@ async def verify_otp(
 
     if not otp_db:
         raise HTTPException(
-            status_code = status.HTTP_400_BAD_REQUEST,
-            detail = f"User with id:'{user_id}' does not have an OTP token",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"User with id:'{user_id}' does not have an OTP token",
         )
 
     is_verified = await verify_password(
@@ -177,15 +177,13 @@ async def verify_otp(
     await update_model(
         model_class=OTPVerification,
         id=otp_db.id,
-        schema = {
+        schema={
             "is_used": True,
         },
         session=db,
     )
 
     return is_verified and otp_db.expires_at > datetime.utcnow()
-
-
 
 
 async def save_password(
