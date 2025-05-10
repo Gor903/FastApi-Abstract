@@ -1,3 +1,5 @@
+from pydantic import BaseModel
+
 from .auth import LoginRequest, LoginResponse
 from .users import UserRegister, UserResponse
 
@@ -7,3 +9,7 @@ __all__ = [
     "LoginResponse",
     "LoginRequest",
 ]
+
+
+class MessageResponse(BaseModel):
+    message: str

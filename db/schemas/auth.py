@@ -1,7 +1,10 @@
+import uuid
 from operator import xor
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
+
+from src.utils import password_validator
 
 
 class LoginRequest(BaseModel):
@@ -15,6 +18,11 @@ class LoginRequest(BaseModel):
             raise ValueError("Provide either 'email' or 'username', but not both.")
         return self
 
+    @model_validator(mode="after")
+    def check_password(self):
+        password_validator(self.password)
+        return self
+
 
 class LoginResponse(BaseModel):
     access_token: str = Field(
@@ -22,4 +30,29 @@ class LoginResponse(BaseModel):
     )
     refresh_token: str = Field(
         description="Refresh token",
+    )
+
+
+class OTPRequest(BaseModel):
+    user_id: uuid.UUID = Field(
+        description="User ID",
+    )
+    otp: str = Field(
+        description="OTP",
+    )
+
+
+class PasswordResset(BaseModel):
+    old_password: str
+    new_password: str
+
+    @model_validator(mode="after")
+    def check_password(self):
+        password_validator(self.new_password)
+        return self
+
+
+class PasswordResetOTP(LoginRequest):
+    otp: str = Field(
+        description="OTP",
     )

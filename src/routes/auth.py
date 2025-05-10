@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException
@@ -8,7 +7,9 @@ from starlette import status
 
 from db.ctrls import users as ctrls_users
 from db.ctrls import auth as ctrls_auth
-from db.schemas import LoginRequest, LoginResponse, UserRegister, UserResponse
+from db.schemas import users as schema_users
+from db.schemas import auth as schema_auth
+from db.schemas import MessageResponse
 from src.dependencies import db_dependency, token_dependency, user_dependency
 
 router = APIRouter(
@@ -19,18 +20,18 @@ router = APIRouter(
 
 @router.post(
     path="/register",
-    response_model=UserResponse,
+    response_model=schema_users.UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def register(
-    user: UserRegister,
+    data: schema_users.UserRegister,
     db: AsyncSession = db_dependency,
 ):
-    user_data = user.model_dump()
-    password = user_data.pop("password")
+    data = data.model_dump()
+    password = data.pop("password")
 
     user = await ctrls_users.register_user(
-        user_data=user_data,
+        user_data=data,
         password=password,
         db=db,
     )
@@ -40,14 +41,17 @@ async def register(
 
 @router.post(
     path="/verify_otp",
-    response_model=bool,
+    response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
 )
 async def verify_otp(
-    user_id: uuid.UUID = Body(..., embed=True),
-    otp: str = Body(..., embed=True),
+    data: schema_auth.OTPRequest,
     db: AsyncSession = db_dependency,
 ):
+    data = data.model_dump()
+    user_id = data.get("user_id")
+    otp = data.get("otp")
+
     verified = await ctrls_auth.verify_otp(
         user_id=user_id,
         otp=otp,
@@ -68,12 +72,14 @@ async def verify_otp(
         db=db,
     )
 
-    return True
+    return {
+        "message": "OTP verified",
+    }
 
 
 @router.post(
     path="/send_otp",
-    response_model=bool,
+    response_model=MessageResponse,
 )
 async def send_otp(
     email: str = Body(..., embed=True),
@@ -90,31 +96,33 @@ async def send_otp(
             detail="Email not found",
         )
 
-    res = await ctrls_auth.create_and_send_otp(
+    await ctrls_auth.create_and_send_otp(
         user_id=user.id,
         email=email,
         db=db,
     )
 
-    return res
+    return {
+        "message": f"OTP sent to {user.email}",
+    }
 
 
 @router.post(
     path="/login",
-    response_model=LoginResponse,
+    response_model=schema_auth.LoginResponse,
 )
 async def login(
-    login_data: LoginRequest,
+    data: schema_auth.LoginRequest,
     db: AsyncSession = db_dependency,
 ):
-    login_data = login_data.model_dump()
+    data = data.model_dump()
 
-    if email := login_data.get("email"):
+    if email := data.get("email"):
         user = await ctrls_users.get_user_by_email(
             email=email,
             db=db,
         )
-    elif username := login_data.get("username"):
+    elif username := data.get("username"):
         user = await ctrls_users.get_user_by_username(
             username=username,
             db=db,
@@ -133,7 +141,7 @@ async def login(
 
     authorized = await ctrls_auth.verify_authorization(
         user=user,
-        password=login_data.get("password"),
+        password=data.get("password"),
         db=db,
     )
 
@@ -161,14 +169,14 @@ async def login(
 
 @router.post(
     path="/login/swagger",
-    response_model=LoginResponse,
+    response_model=schema_auth.LoginResponse,
 )
 async def login_user(
-    login_data: OAuth2PasswordRequestForm = Depends(),
+    data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = db_dependency,
 ):
     user = await ctrls_users.get_user_by_username(
-        username=login_data.username,
+        username=data.username,
         db=db,
     )
 
@@ -180,7 +188,7 @@ async def login_user(
 
     authorized = await ctrls_auth.verify_authorization(
         user=user,
-        password=login_data.password,
+        password=data.password,
         db=db,
     )
 
@@ -208,14 +216,17 @@ async def login_user(
 
 @router.post(
     path="/reset_password",
-    response_model=bool,
+    response_model=MessageResponse,
 )
 async def reset_password(
+    data: schema_auth.PasswordResset,
     user: user_dependency,
     db: AsyncSession = db_dependency,
-    old_password: str = Body(..., embed=True),
-    new_password: str = Body(..., embed=True),
 ):
+    data = data.model_dump()
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+
     authorized = await ctrls_auth.verify_authorization(
         user=user,
         password=old_password,
@@ -240,20 +251,39 @@ async def reset_password(
             db=db,
         )
 
-    return update
+    return {
+        "message": "Password updated",
+    }
 
 
 @router.post(
     path="/reset_password/otp",
-    response_model=bool,
+    response_model=MessageResponse,
 )
 async def reset_password_otp(
-    user_id: uuid.UUID = Body(..., embed=True),
-    otp: str = Body(..., embed=True),
-    new_password: str = Body(..., embed=True),
+    data: schema_auth.PasswordResetOTP,
     db: AsyncSession = db_dependency,
 ):
-    user = await ctrls_users.get_user_by_id(user_id, db)
+    data = data.model_dump()
+
+    if email := data.get("email"):
+        user = await ctrls_users.get_user_by_email(
+            email=email,
+            db=db,
+        )
+    elif username := data.get("username"):
+        user = await ctrls_users.get_user_by_username(
+            username=username,
+            db=db,
+        )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found",
+        )
+
+    otp = data.get("otp")
+    password = data.get("password")
 
     if not user:
         raise HTTPException(
@@ -262,7 +292,7 @@ async def reset_password_otp(
         )
 
     verified = await ctrls_auth.verify_otp(
-        user_id=user_id,
+        user_id=user.id,
         otp=otp,
         db=db,
     )
@@ -275,7 +305,7 @@ async def reset_password_otp(
 
     update = await ctrls_auth.update_password(
         user_id=user.id,
-        password=new_password,
+        password=password,
         db=db,
     )
 
@@ -285,12 +315,14 @@ async def reset_password_otp(
             db=db,
         )
 
-    return update
+    return {
+        "message": "Password updated",
+    }
 
 
 @router.post(
     path="/refresh",
-    response_model=LoginResponse,
+    response_model=schema_auth.LoginResponse,
 )
 async def refresh_tokens(
     refresh_token: str = Body(..., embed=True),
@@ -349,7 +381,7 @@ async def refresh_tokens(
 
 @router.post(
     path="/logout",
-    response_model=bool,
+    response_model=MessageResponse,
 )
 async def logout(
     token: token_dependency,
@@ -376,12 +408,14 @@ async def logout(
         db=db,
     )
 
-    return True
+    return {
+        "message": "Successfully logged out",
+    }
 
 
 @router.get(
     path="/me",
-    response_model=UserResponse,
+    response_model=schema_users.UserResponse,
 )
 async def get_me(
     user: user_dependency,
