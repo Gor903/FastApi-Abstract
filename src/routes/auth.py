@@ -1,10 +1,12 @@
 from datetime import datetime
 
+from asyncpg.pgproto.pgproto import timedelta
 from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from core import settings
 from db.ctrls import users as ctrls_users
 from db.ctrls import auth as ctrls_auth
 from db.schemas import users as schema_users
@@ -376,7 +378,7 @@ async def refresh_tokens(
     )
 
     remaining = refresh_token_db.expires_at - datetime.utcnow()
-    if remaining.total_seconds() < 7200:
+    if remaining < timedelta(days=settings.REFRESH_TOKEN_UPDATE_REMAINING):
         await ctrls_auth.update_refresh_token(
             data={"revoked": True},
             id=refresh_token_db.id,

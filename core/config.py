@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     OTP_EXPIRES_MINUTES: int = int(os.getenv("OTP_EXPIRES_MINUTES", 10))
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
+    REFRESH_TOKEN_UPDATE_REMAINING: int = int(
+        os.getenv("REFRESH_TOKEN_UPDATE_REMAINING", 2)
+    )
 
     # CORS
     CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = [
