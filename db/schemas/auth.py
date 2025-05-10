@@ -7,16 +7,19 @@ from pydantic import BaseModel, EmailStr, Field, model_validator
 from src.utils import password_validator
 
 
-class LoginRequest(BaseModel):
+class EmailOrUsernameRequest(BaseModel):
     email: Optional[EmailStr] = None
     username: Optional[str] = None
-    password: str
 
     @model_validator(mode="after")
     def check_email_or_username(self):
         if not xor(self.email is not None, self.username is not None):
             raise ValueError("Provide either 'email' or 'username', but not both.")
         return self
+
+
+class LoginRequest(EmailOrUsernameRequest):
+    password: str
 
     @model_validator(mode="after")
     def check_password(self):
@@ -33,10 +36,7 @@ class LoginResponse(BaseModel):
     )
 
 
-class OTPRequest(BaseModel):
-    user_id: uuid.UUID = Field(
-        description="User ID",
-    )
+class OTPRequest(EmailOrUsernameRequest):
     otp: str = Field(
         description="OTP",
     )

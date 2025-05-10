@@ -49,11 +49,27 @@ async def verify_otp(
     db: AsyncSession = db_dependency,
 ):
     data = data.model_dump()
-    user_id = data.get("user_id")
+
+    if email := data.get("email"):
+        user = await ctrls_users.get_user_by_email(
+            email=email,
+            db=db,
+        )
+    elif username := data.get("username"):
+        user = await ctrls_users.get_user_by_username(
+            username=username,
+            db=db,
+        )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found",
+        )
+
     otp = data.get("otp")
 
     verified = await ctrls_auth.verify_otp(
-        user_id=user_id,
+        user_id=user.id,
         otp=otp,
         db=db,
     )
@@ -65,7 +81,7 @@ async def verify_otp(
         )
 
     await ctrls_users.update_user(
-        user_id=user_id,
+        user_id=user.id,
         data={
             "is_verified": True,
         },
@@ -82,23 +98,30 @@ async def verify_otp(
     response_model=MessageResponse,
 )
 async def send_otp(
-    email: str = Body(..., embed=True),
+    data: schema_auth.EmailOrUsernameRequest,
     db: AsyncSession = db_dependency,
 ):
-    user = await ctrls_users.get_user_by_email(
-        email=email,
-        db=db,
-    )
+    data = data.model_dump()
 
+    if email := data.get("email"):
+        user = await ctrls_users.get_user_by_email(
+            email=email,
+            db=db,
+        )
+    elif username := data.get("username"):
+        user = await ctrls_users.get_user_by_username(
+            username=username,
+            db=db,
+        )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email not found",
+            detail="User not found",
         )
 
     await ctrls_auth.create_and_send_otp(
         user_id=user.id,
-        email=email,
+        email=user.email,
         db=db,
     )
 
