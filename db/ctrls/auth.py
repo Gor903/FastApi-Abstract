@@ -152,22 +152,10 @@ async def verify_otp(
     otp: str,
     db: AsyncSession,
 ):
-    query = (
-        select(OTPVerification)
-        .where(OTPVerification.user_id == user_id)
-        .where(OTPVerification.is_used == False)
+    otp_db = await get_otp(
+        user_id=user_id,
+        db=db,
     )
-
-    otp_db = await get_data_from_table(
-        query=query,
-        session=db,
-    )
-
-    if not otp_db:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"User with id:'{user_id}' does not have an OTP token",
-        )
 
     is_verified = await verify_password(
         plain_password=otp,
@@ -256,11 +244,43 @@ def generate_otp(length=settings.OTP_LENGTH):
     return "".join(random.choices(string.digits, k=length))
 
 
+async def get_otp(
+    user_id: uuid.UUID,
+    db: AsyncSession,
+    exist: bool = False,
+):
+    query = (
+        select(OTPVerification)
+        .where(OTPVerification.user_id == user_id)
+        .where(OTPVerification.is_used == False)
+    )
+
+    otp_db = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    if exist == bool(otp_db):
+        message = f"User has an OTP" if exist else f"User does not have an OTP token"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=message,
+        )
+
+    return otp_db
+
+
 async def create_and_send_otp(
     user_id: uuid.UUID,
     email: str,
     db: AsyncSession,
 ):
+    await get_otp(
+        user_id=user_id,
+        db=db,
+        exist=True,
+    )
+
     otp = generate_otp()
 
     hashed_otp = await hash_password(otp)
@@ -280,21 +300,6 @@ async def create_and_send_otp(
     )
 
     return True
-
-
-async def create_email_verification_token(
-    user_id: uuid.UUID,
-):
-    token = create_token(
-        data={
-            "sub": str(user_id),
-            "type": "email_verification",
-        },
-        expires_delta=timedelta(
-            hours=settings.EMAIL_VERIFICATION_TOKEN_EXPIRES_HOURS,
-        ),
-    )
-    return token
 
 
 async def get_id_from_email_token(token: str) -> str | None:

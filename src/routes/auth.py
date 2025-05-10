@@ -171,7 +171,7 @@ async def login(
     path="/login/swagger",
     response_model=schema_auth.LoginResponse,
 )
-async def login_user(
+async def login_swagger(
     data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = db_dependency,
 ):
