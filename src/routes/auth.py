@@ -284,6 +284,12 @@ async def reset_password(
             db=db,
         )
 
+    send_email_task.delay(
+        email=user.email,
+        subject=f"Notification from {settings.PROJECT_NAME}",
+        body=f"Your password has been updated!",
+    )
+
     return {
         "message": "Password updated",
     }
@@ -347,6 +353,12 @@ async def reset_password_otp(
             user_id=user.id,
             db=db,
         )
+
+    send_email_task.delay(
+        email=user.email,
+        subject=f"Notification from {settings.PROJECT_NAME}",
+        body=f"Your password has been updated!",
+    )
 
     return {
         "message": "Password updated",
