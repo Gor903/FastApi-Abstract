@@ -13,6 +13,8 @@ from db.schemas import users as schema_users
 from db.schemas import auth as schema_auth
 from db.schemas import MessageResponse
 from src.dependencies import db_dependency, token_dependency, user_dependency
+from src.tasks import send_email_task
+
 
 router = APIRouter(
     prefix="/auth",
@@ -68,11 +70,11 @@ async def verify_otp(
             detail="User not found",
         )
 
-    otp = data.get("otp")
+    otp: str = data.get("otp")
 
     verified = await ctrls_auth.verify_otp(
         user_id=user.id,
-        otp=otp,
+        otp=otp.strip(),
         db=db,
     )
 
@@ -184,6 +186,12 @@ async def login(
     access_token = await ctrls_auth.create_access_token(
         user=user,
         refresh_token_id=str(refresh_token[1]),
+    )
+
+    send_email_task.delay(
+        email=user.email,
+        subject=f"Notification from {settings.PROJECT_NAME}",
+        body=f"You have been successfully logged in!",
     )
 
     return {

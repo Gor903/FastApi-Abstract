@@ -17,7 +17,7 @@ from db.services import (
     insert_into_table,
     update_model,
 )
-from src.tasks import send_otp_email_task
+from src.tasks import send_email_task
 from src.utils import (
     create_token,
     decode_token,
@@ -171,7 +171,7 @@ async def verify_otp(
         session=db,
     )
 
-    return is_verified and otp_db.expires_at > datetime.utcnow()
+    return is_verified
 
 
 async def save_password(
@@ -253,6 +253,7 @@ async def get_otp(
         select(OTPVerification)
         .where(OTPVerification.user_id == user_id)
         .where(OTPVerification.is_used == False)
+        .where(OTPVerification.expires_at > datetime.utcnow())
     )
 
     otp_db = await get_data_from_table(
@@ -294,17 +295,13 @@ async def create_and_send_otp(
         },
     )
 
-    send_otp_email_task.delay(
+    send_email_task.delay(
         email=email,
-        otp=otp,
+        subject="Verify your OTP",
+        body=f"Your OTP: \n\n {otp}",
     )
 
     return True
-
-
-async def get_id_from_email_token(token: str) -> str | None:
-    data = decode_token(token)
-    return data.get("sub")
 
 
 async def get_refresh_token_by_token(
