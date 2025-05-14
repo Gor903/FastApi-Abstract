@@ -2,11 +2,11 @@ import random
 import string
 import uuid
 from datetime import datetime, timedelta
-from fastapi import HTTPException
-from starlette import status
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette import status
 
 from core import settings
 from db.models import Auth, RefreshToken, User
@@ -20,7 +20,6 @@ from db.services import (
 from src.tasks import send_email_task
 from src.utils import (
     create_token,
-    decode_token,
     hash_password,
     hash_refresh_token,
     verify_password,
@@ -68,6 +67,7 @@ async def create_refresh_token(
             "sub": user.username,
             "email": user.email,
             "id": str(user.id),
+            "anchor": str(uuid.uuid4()),
         },
         expires_delta=exp,
     )
@@ -102,7 +102,7 @@ async def create_access_token(
             "refresh_token_id": refresh_token_id,
         },
         expires_delta=timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+            hours=settings.ACCESS_TOKEN_EXPIRE_HOURS,
         ),
     )
 

@@ -390,28 +390,26 @@ async def refresh_tokens(
             detail="Refresh token revoked",
         )
 
-    refresh_token_id = refresh_token_db.id
+    await ctrls_auth.update_refresh_token(
+        id=refresh_token_db.id,
+        data={
+            "revoked": True,
+        },
+        db=db,
+    )
 
     user = await ctrls_users.get_user_by_id(
         user_id=refresh_token_db.user_id,
         db=db,
     )
 
-    remaining = refresh_token_db.expires_at - datetime.utcnow()
-    if remaining < timedelta(days=settings.REFRESH_TOKEN_UPDATE_REMAINING):
-        await ctrls_auth.update_refresh_token(
-            data={"revoked": True},
-            id=refresh_token_db.id,
-            db=db,
-        )
+    refresh_token_db = await ctrls_auth.create_refresh_token(
+        user=user,
+        db=db,
+    )
 
-        refresh_token_db = await ctrls_auth.create_refresh_token(
-            user=user,
-            db=db,
-        )
-
-        refresh_token_id = str(refresh_token_db[1])
-        refresh_token = refresh_token_db[0]
+    refresh_token_id = refresh_token_db[1]
+    refresh_token = refresh_token_db[0]
 
     access_token = await ctrls_auth.create_access_token(
         user=user,

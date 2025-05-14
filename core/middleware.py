@@ -30,14 +30,14 @@ def setup_middlewares(app: FastAPI) -> None:
         )
         return response
 
-    @app.middleware("http")
-    async def auth(request: Request, call_next):
-
-        if request.method == "POST":
-            body_bytes = await request.body()
-            body = json.loads(body_bytes.decode("utf-8"))
-
-            print(body)
-
-        response = await call_next(request)
-        return response
+    # @app.middleware("http")
+    # async def auth(request: Request, call_next):
+    #
+    #     if request.method == "POST":
+    #         body_bytes = await request.body()
+    #         body = json.loads(body_bytes.decode("utf-8"))
+    #
+    #         print(body)
+    #
+    #     response = await call_next(request)
+    #     return response
