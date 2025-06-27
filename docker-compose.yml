@@ -1,66 +1,15 @@
+version: '3.8'
+
 services:
-  api:
-    build: .
-    container_name: ${PROJECT_NAME}-api
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    container_name: ${PROJECT_NAME}-gateway
+    volumes:
+      - ./gateway:/app
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
-    networks:
-     - backend
-
-  db:
-    image: postgres
-    container_name: ${PROJECT_NAME}-db
     env_file:
       - ./.env
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    networks:
-     - backend
-
-  celery_worker:
-    build: .
-    container_name: ${PROJECT_NAME}-celery_worker
-    command: celery -A core.celery_app worker --loglevel=info
-    volumes:
-      - .:/app
-    depends_on:
-      - redis
-    env_file:
-      - .env
-    networks:
-      - backend
-
-  redis:
-    image: redis:7
-    container_name: ${PROJECT_NAME}-redis
-    ports:
-      - "6379:6379"
-    networks:
-      - backend
-
-  minio:
-    image: minio/minio:latest
-    container_name: ${PROJECT_NAME}-minio
-    command: server /data
-    environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-    ports:
-      - "9000:9000"
-    volumes:
-      - minio_data:/data
-    networks:
-      - backend
-
-volumes:
-  postgres_data:
-  minio_data:
-
-networks:
- backend:
-  driver: bridge
