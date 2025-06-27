@@ -1,36 +1,51 @@
-from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
-from fastapi import FastAPI
+from httpx import AsyncClient
 
-# from core import setup_middlewares
-# from db import init_db
-# from src.routes import auth_router
+from config import settings
 
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     try:
-#         await init_db()
-#     except Exception as e:
-#         print(f"[Startup Error] DB init failed: {e}")
-#     yield
+app = FastAPI()
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(
-        # lifespan=lifespan,
-    )
 
-    # setup_middlewares(app)
+async def forward_request(
+    method: str, base_url: str, endpoint: str, headers=None, body=None
+):
+    async with AsyncClient(base_url=base_url) as client:
+        response = None
+        try:
 
-    # app.include_router(auth_router)
+            safe_headers = {
+                k: v
+                for k, v in (headers or {}).items()
+                if k.lower() != "content-length"
+            }
 
-    return app
+            response = await client.request(
+                method=method.upper(),
+                url=endpoint,
+                headers=safe_headers,
+                content=body,
+            )
+        except Exception as e:
+            print(f"forward error: {e}")
+        return response
 
 
-app = create_app()
+# @app.api_route("/proxy/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+# async def gateway_proxy(request: Request, path: str):
+#     method = request.method
+#     base_url = f"http://{settings.SERVICE2_HOST}:{settings.SERVICE2_PORT}"
+#     headers = dict(request.headers)
+#     body = await request.body() if method in ["POST", "PUT", "PATCH"] else None
 
+#     response = await forward_request(
+#         method=method,
+#         base_url=base_url,
+#         endpoint=path,
+#         headers=headers,
+#         body=body,
+#     )
 
-@app.get("/")
-async def get_root():
-    return {"message": "OK"}
+#     return JSONResponse(response)
