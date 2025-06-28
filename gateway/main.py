@@ -33,19 +33,21 @@ async def forward_request(
         return response
 
 
-# @app.api_route("/proxy/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-# async def gateway_proxy(request: Request, path: str):
-#     method = request.method
-#     base_url = f"http://{settings.SERVICE2_HOST}:{settings.SERVICE2_PORT}"
-#     headers = dict(request.headers)
-#     body = await request.body() if method in ["POST", "PUT", "PATCH"] else None
+@app.api_route("/users/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def gateway_proxy(request: Request, path: str):
+    method = request.method
+    base_url = f"http://user-service:8001"
+    headers = dict(request.headers)
+    body = await request.body() if method in ["POST", "PUT", "PATCH"] else None
 
-#     response = await forward_request(
-#         method=method,
-#         base_url=base_url,
-#         endpoint=path,
-#         headers=headers,
-#         body=body,
-#     )
-
-#     return JSONResponse(response)
+    response = await forward_request(
+        method=method,
+        base_url=base_url,
+        endpoint=path,
+        headers=headers,
+        body=body,
+    )
+    return {
+        "status_code": response.status_code,
+        "body": response.text,
+    }
