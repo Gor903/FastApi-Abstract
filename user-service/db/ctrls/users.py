@@ -1,44 +1,11 @@
-import uuid
-
+from fastapi import HTTPException
+from starlette import status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.models import User
+from db.models import User, RefreshToken
 from db.services import get_data_from_table, update_model
-
-
-
-async def verify_user(
-    db: AsyncSession,
-    user_id: uuid.UUID,
-    value: bool = True,
-):
-    await update_model(
-        model_class=User,
-        id=user_id,
-        session=db,
-        schema={
-            "is_verified": value,
-        },
-    )
-
-    return True
-
-
-async def update_user(
-    user_id: uuid.UUID,
-    data: dict,
-    db: AsyncSession,
-):
-    await update_model(
-        model_class=User,
-        id=user_id,
-        schema=data,
-        session=db,
-    )
-
-    return True
-
+from src.utils import decode_token
 
 async def get_user(
     db: AsyncSession,
@@ -62,3 +29,42 @@ async def get_user(
     )
 
     return user
+
+
+async def get_user_id(
+    data: dict,
+    db: AsyncSession,
+):
+    request = data.get("request")
+    auth = request.headers.get("Authorization")
+    if not auth or not auth.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid token",
+        )
+    
+    token = auth.split("Bearer ")[-1]
+
+    payload = decode_token(token)
+
+    query = (
+        select(RefreshToken)
+        .where(RefreshToken.id == payload.get("refresh_token_id"))
+    )
+    await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    query = (
+        select(User)
+        .where(User.id == payload.get("user_id"))
+    )
+    await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    return payload.get("user_id")
+
+

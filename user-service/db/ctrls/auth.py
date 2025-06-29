@@ -382,3 +382,37 @@ async def reset_password_otp(
     return {
         "message": "Password updated successfully",
     }
+
+
+
+# Tobechanged
+
+
+async def verify_authorization(
+    user: User,
+    password: str,
+    db: AsyncSession,
+):
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid users",
+        )
+
+    query = select(Auth).where(Auth.user_id == user.id)
+
+    auth = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    if not auth:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid users",
+        )
+
+    return await verify_password(
+        plain_password=password,
+        hashed_password=auth.hashed_password,
+    )

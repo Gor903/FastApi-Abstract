@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from db import init_db
-from src.routes import auth_router
+from src.routes import auth_router, users_router
 
 
 @asynccontextmanager
@@ -19,6 +19,7 @@ def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
     app.include_router(auth_router)
+    app.include_router(users_router)
 
     return app
 

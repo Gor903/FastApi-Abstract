@@ -121,7 +121,6 @@ async def reset_password(
     db: AsyncSession = db_dependency,
 ):
     data = data.model_dump()
-    # data["user"] = user
 
     response = await ctrls_auth.reset_password(
         data=data,

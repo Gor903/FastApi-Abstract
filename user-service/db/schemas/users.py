@@ -54,3 +54,12 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
+        
+class UserIdResponse(BaseModel):
+    user_id: uuid.UUID = Field(
+        ...,
+        description="Unique identifier for the user (UUID).",
+    )
+
+    class Config:
+        orm_mode = True
