@@ -155,20 +155,14 @@ async def reset_password(
             detail="Invalid users",
         )
 
-    query = select(Auth).where(Auth.user_id == user_id)
+    data = {
+        "user_id": user_id,
+        "password": new_password,
+    }
 
-    auth = await get_data_from_table(
-        query=query,
-        session=db,
-    )
-
-    await update_model(
-        model_class=Auth,
-        id=auth.id,
-        schema={
-            "hashed_password": await hash_password(new_password),
-        },
-        session=db,
+    await update_password(
+        data=data,
+        db=db,
     )
 
     return {
@@ -270,22 +264,11 @@ async def reset_password_otp(
         db=db,
     )
 
-    query = select(Auth).where(Auth.user_id == user.id)
+    data["user_id"] = user.id
 
-    auth = await get_data_from_table(
-        query=query,
-        session=db,
-    )
-
-    hashed_password = await hash_password(data.get("password"))
-
-    await update_model(
-        model_class=Auth,
-        id=auth.id,
-        schema={
-            "hashed_password": hashed_password,
-        },
-        session=db,
+    await update_password(
+        data=data,
+        db=db,
     )
 
     return {
@@ -421,3 +404,27 @@ async def get_refresh_token(
         )
 
     return token_db
+
+
+async def update_password(
+    data: Dict[str, Any],
+    db: AsyncSession,
+):
+    user_id = data.get("user_id")
+
+    query = select(Auth).where(Auth.user_id == user_id)
+
+    auth = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+    hashed_password = await hash_password(data.get("password"))
+
+    await update_model(
+        model_class=Auth,
+        id=auth.id,
+        schema={
+            "hashed_password": hashed_password,
+        },
+        session=db,
+    )
