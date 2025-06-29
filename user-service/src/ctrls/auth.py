@@ -67,47 +67,16 @@ async def login(
             detail="Invalid username or password",
         )
 
-    refresh_token_expire = timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS,
-    )
-
-    refresh_token = create_token(
-        data={
-            "sub": user.username,
-            "email": user.email,
-            "id": str(user.id),
-            "anchor": str(uuid.uuid4()),
-        },
-        expires_delta=refresh_token_expire,
-    )
-
-    refresh_token_db = await insert_into_table(
-        model_class=RefreshToken,
-        session=db,
-        schema={
-            "user_id": str(user.id),
-            "token_hash": hash_token(refresh_token),
-            "expires_at": datetime.now() + refresh_token_expire,
-        },
-        auto_commit=True,
-    )
-
-    access_token = create_token(
-        data={
-            "sub": user.username,
-            "email": user.email,
-            "user_id": str(user.id),
-            "refresh_token_id": str(refresh_token_db.id),
-        },
-        expires_delta=timedelta(
-            hours=settings.ACCESS_TOKEN_EXPIRE_HOURS,
-        ),
-    )
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
+    data = {
+        "user": user,
     }
+
+    tokens = await create_tokens(
+        data=data,
+        db=db,
+    )
+
+    return tokens
 
 
 async def logout(
@@ -173,51 +142,21 @@ async def refresh(
         session=db,
     )
 
-    refresh_token_expire = timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS,
-    )
-
     user = await get_user(
         id=token_db.user_id,
         db=db,
     )
 
-    refresh_token = create_token(
-        data={
-            "sub": user.username,
-            "email": user.email,
-            "id": str(user.id),
-            "anchor": str(uuid.uuid4()),
-        },
-        expires_delta=refresh_token_expire,
-    )
-    refresh_token_db = await insert_into_table(
-        model_class=RefreshToken,
-        session=db,
-        schema={
-            "user_id": str(user.id),
-            "token_hash": hash_token(refresh_token),
-            "expires_at": datetime.now() + refresh_token_expire,
-        },
-        auto_commit=True,
-    )
-
-    access_token = create_token(
-        data={
-            "sub": user.username,
-            "email": user.email,
-            "user_id": str(user.id),
-            "refresh_token_id": str(refresh_token_db.id),
-        },
-        expires_delta=timedelta(
-            hours=settings.ACCESS_TOKEN_EXPIRE_HOURS,
-        ),
-    )
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
+    data = {
+        "user": user,
     }
+
+    tokens = await create_tokens(
+        data=data,
+        db=db,
+    )
+
+    return tokens
 
 
 async def reset_password(
@@ -433,3 +372,52 @@ async def get_otp(
         )
 
     return otp_db
+
+
+async def create_tokens(
+    data: Dict[str, Any],
+    db: AsyncSession,
+):
+    user = data.get("user")
+
+    refresh_token_expire = timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS,
+    )
+
+    refresh_token = create_token(
+        data={
+            "sub": user.username,
+            "email": user.email,
+            "id": str(user.id),
+            "anchor": str(uuid.uuid4()),
+        },
+        expires_delta=refresh_token_expire,
+    )
+
+    refresh_token_db = await insert_into_table(
+        model_class=RefreshToken,
+        session=db,
+        schema={
+            "user_id": str(user.id),
+            "token_hash": hash_token(refresh_token),
+            "expires_at": datetime.now() + refresh_token_expire,
+        },
+        auto_commit=True,
+    )
+
+    access_token = create_token(
+        data={
+            "sub": user.username,
+            "email": user.email,
+            "user_id": str(user.id),
+            "refresh_token_id": str(refresh_token_db.id),
+        },
+        expires_delta=timedelta(
+            hours=settings.ACCESS_TOKEN_EXPIRE_HOURS,
+        ),
+    )
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+    }

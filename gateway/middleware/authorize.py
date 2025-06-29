@@ -13,6 +13,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/users/auth/verify_otp",
         "/users/auth/send_otp",
         "/users/auth/reset_password/otp",
+        "/users/auth/refresh",
     ]
 
     async def dispatch(self, request: Request, call_next):
