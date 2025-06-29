@@ -83,22 +83,10 @@ async def logout(
     data: Dict[str, Any],
     db: AsyncSession,
 ):
-    refresh_token = data.get("refresh_token")
-
-    query = select(RefreshToken).where(
-        RefreshToken.token_hash == hash_token(refresh_token)
+    token_db = await get_refresh_token(
+        data=data,
+        db=db,
     )
-
-    token_db = await get_data_from_table(
-        query=query,
-        session=db,
-    )
-
-    if token_db.revoked or token_db.expires_at < datetime.now():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token already revoked",
-        )
 
     await update_model(
         model_class=RefreshToken,
@@ -116,22 +104,10 @@ async def refresh(
     data: Dict[str, Any],
     db: AsyncSession,
 ):
-    refresh_token = data.get("refresh_token")
-
-    query = select(RefreshToken).where(
-        RefreshToken.token_hash == hash_token(refresh_token)
+    token_db = await get_refresh_token(
+        data=data,
+        db=db,
     )
-
-    token_db = await get_data_from_table(
-        query=query,
-        session=db,
-    )
-
-    if token_db.revoked or token_db.expires_at < datetime.now():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token already revoked",
-        )
 
     await update_model(
         model_class=RefreshToken,
@@ -421,3 +397,27 @@ async def create_tokens(
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
+
+
+async def get_refresh_token(
+    data: Dict[str, Any],
+    db: AsyncSession,
+):
+    refresh_token = data.get("refresh_token")
+
+    query = select(RefreshToken).where(
+        RefreshToken.token_hash == hash_token(refresh_token)
+    )
+
+    token_db = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    if token_db.revoked or token_db.expires_at < datetime.now():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token already revoked",
+        )
+
+    return token_db
