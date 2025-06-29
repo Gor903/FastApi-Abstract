@@ -54,7 +54,8 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
-        
+
+
 class UserIdResponse(BaseModel):
     user_id: uuid.UUID = Field(
         ...,

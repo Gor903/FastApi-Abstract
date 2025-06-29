@@ -2,30 +2,24 @@ import random
 import string
 import uuid
 from datetime import datetime, timedelta
+from typing import Any, Dict
 
-from fastapi import HTTPException
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
-from src.utils import hash_password, verify_password, create_token, hash_token
 from core import settings
 from db.models import Auth, RefreshToken, User
 from db.models.auth import OTPVerification
-from db.services import (
-    delete_record,
-    get_data_from_table,
-    insert_into_table,
-    update_model,
-)
+from db.services import get_data_from_table, insert_into_table, update_model
+from fastapi import HTTPException
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.utils import create_token, hash_password, hash_token, verify_password
+from starlette import status
+
 from .users import get_user
-
-from typing import Dict, Any
-
 
 
 async def register(
     data: Dict[str, Any],
-    db: AsyncSession,    
+    db: AsyncSession,
 ):
     password = data.pop("password")
 
@@ -72,11 +66,11 @@ async def login(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid username or password",
         )
-    
+
     refresh_token_expire = timedelta(
         days=settings.REFRESH_TOKEN_EXPIRE_DAYS,
     )
-    
+
     refresh_token = create_token(
         data={
             "sub": user.username,
@@ -97,7 +91,7 @@ async def login(
         },
         auto_commit=True,
     )
-    
+
     access_token = create_token(
         data={
             "sub": user.username,
@@ -122,9 +116,8 @@ async def logout(
 ):
     refresh_token = data.get("refresh_token")
 
-    query = (
-        select(RefreshToken)
-        .where(RefreshToken.token_hash == hash_token(refresh_token))
+    query = select(RefreshToken).where(
+        RefreshToken.token_hash == hash_token(refresh_token)
     )
 
     token_db = await get_data_from_table(
@@ -148,7 +141,7 @@ async def logout(
     )
 
     return {"message": "Successfully logged out"}
-    
+
 
 async def refresh(
     data: Dict[str, Any],
@@ -156,9 +149,8 @@ async def refresh(
 ):
     refresh_token = data.get("refresh_token")
 
-    query = (
-        select(RefreshToken)
-        .where(RefreshToken.token_hash == hash_token(refresh_token))
+    query = select(RefreshToken).where(
+        RefreshToken.token_hash == hash_token(refresh_token)
     )
 
     token_db = await get_data_from_table(
@@ -209,7 +201,7 @@ async def refresh(
         },
         auto_commit=True,
     )
-    
+
     access_token = create_token(
         data={
             "sub": user.username,
@@ -231,11 +223,10 @@ async def refresh(
 async def reset_password(
     data: Dict[str, Any],
     db: AsyncSession,
-):      
+):
     old_password = data.get("old_password")
     new_password = data.get("new_password")
     user_id = data.get("user_id")
-
 
     authorization = await verify_authorization(
         user_id=user_id,
@@ -248,9 +239,9 @@ async def reset_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid users",
         )
-    
+
     query = select(Auth).where(Auth.user_id == user_id)
-    
+
     auth = await get_data_from_table(
         query=query,
         session=db,
@@ -300,7 +291,7 @@ async def send_otp(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User has an OTP",
         )
-    
+
     otp = "".join(random.choices(string.digits, k=settings.OTP_LENGTH))
     print(otp)
     hashed_otp = await hash_password(otp)
@@ -316,7 +307,7 @@ async def send_otp(
 
     print("inserted")
 
-    
+
 async def verify_otp(
     data: Dict[str, Any],
     db: AsyncSession,
@@ -365,7 +356,7 @@ async def reset_password_otp(
     )
 
     query = select(Auth).where(Auth.user_id == user.id)
-    
+
     auth = await get_data_from_table(
         query=query,
         session=db,
@@ -385,7 +376,6 @@ async def reset_password_otp(
     return {
         "message": "Password updated successfully",
     }
-
 
 
 # Tobechanged

@@ -1,9 +1,7 @@
-import uuid
 from operator import xor
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
-
 
 
 class EmailOrUsernameRequest(BaseModel):

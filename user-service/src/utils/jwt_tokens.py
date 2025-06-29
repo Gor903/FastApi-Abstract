@@ -1,11 +1,10 @@
-from fastapi import HTTPException
-from starlette import status
+from datetime import datetime, timedelta
+from typing import Any, Dict, Union
 
 import jwt
-from datetime import datetime, timedelta
-from typing import Dict, Any, Union
-
 from core import settings
+from fastapi import HTTPException
+from starlette import status
 
 
 def create_token(data: dict, expires_delta: Union[timedelta, None]) -> str:

@@ -3,5 +3,4 @@ __all__ = [
     "authorize",
 ]
 
-from . import logger
-from . import authorize
+from . import authorize, logger

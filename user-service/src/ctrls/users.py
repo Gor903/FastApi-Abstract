@@ -1,11 +1,11 @@
+from db.models import RefreshToken, User
+from db.services import get_data_from_table
 from fastapi import HTTPException
-from starlette import status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from db.models import User, RefreshToken
-from db.services import get_data_from_table, update_model
 from src.utils import decode_token
+from starlette import status
+
 
 async def get_user(
     db: AsyncSession,
@@ -43,7 +43,7 @@ async def get_user_id(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid token",
         )
-    
+
     token = auth.split("Bearer ")[-1]
 
     payload = decode_token(token)
@@ -58,15 +58,10 @@ async def get_user_id(
         session=db,
     )
 
-    query = (
-        select(User)
-        .where(User.id == payload.get("user_id"))
-    )
+    query = select(User).where(User.id == payload.get("user_id"))
     await get_data_from_table(
         query=query,
         session=db,
     )
 
     return payload.get("user_id")
-
-

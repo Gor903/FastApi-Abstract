@@ -1,8 +1,7 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-
 from db import init_db
+from fastapi import FastAPI
 from src.routes import auth_router, users_router
 
 

@@ -13,7 +13,7 @@ async def update_model(
     schema: dict,
 ) -> bool:
     try:
-        __result__ = await session.execute(
+        await session.execute(
             update(model_class).where(model_class.id == id).values(**schema)
         )
 

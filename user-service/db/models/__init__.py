@@ -1,4 +1,4 @@
-from .auth import Auth, OTPVerification, LoginHistory, RefreshToken
+from .auth import Auth, OTPVerification, RefreshToken
 from .users import User
 
 __all__ = [
@@ -6,5 +6,4 @@ __all__ = [
     "Auth",
     "OTPVerification",
     "RefreshToken",
-    "LoginHistory",
 ]

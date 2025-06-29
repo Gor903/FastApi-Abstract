@@ -1,6 +1,7 @@
+import time
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-import time
 
 
 class LoggerMiddleware(BaseHTTPMiddleware):
@@ -8,5 +9,7 @@ class LoggerMiddleware(BaseHTTPMiddleware):
         start_time = time.time()
         response = await call_next(request)
         process_time = time.time() - start_time
-        print(f"INFO:     {request.method} {request.url.path} completed in {process_time:.2f}s")
+        print(
+            f"INFO:     {request.method} {request.url.path} completed in {process_time:.2f}s"
+        )
         return response

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from .auth import LoginRequest, LoginResponse
-from .users import UserRegister, UserResponse, UserIdResponse
+from .users import UserIdResponse, UserRegister, UserResponse
 
 __all__ = [
     "UserRegister",

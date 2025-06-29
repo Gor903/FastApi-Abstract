@@ -1,10 +1,10 @@
 import uuid
 
+from db import Base
+from db.models import Auth, OTPVerification, RefreshToken
 from sqlalchemy import Boolean, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from db import Base
 
 
 class User(Base):
@@ -58,9 +58,6 @@ class User(Base):
     auth: Mapped["Auth"] = relationship(
         back_populates="user",
         uselist=False,
-    )
-    login_history: Mapped[list["LoginHistory"]] = relationship(
-        back_populates="user",
     )
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         back_populates="user",

@@ -1,7 +1,7 @@
 import asyncio
-import bcrypt
 import hashlib
 
+import bcrypt
 from core import settings
 
 

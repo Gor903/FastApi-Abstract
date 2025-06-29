@@ -1,10 +1,8 @@
-from fastapi import FastAPI, Request, Response, HTTPException
 import httpx
-from httpx import AsyncClient
-
 from config import settings
-from middleware import logger, authorize
-
+from fastapi import FastAPI, HTTPException, Request, Response
+from httpx import AsyncClient
+from middleware import authorize, logger
 
 app = FastAPI()
 app.add_middleware(logger.LoggerMiddleware)
@@ -14,10 +12,10 @@ app.add_middleware(authorize.AuthMiddleware)
 async def forward_request(
     method: str, base_url: str, endpoint: str, headers=None, body=None
 ):
-    
+
     async with AsyncClient(base_url=base_url) as client:
         response = None
-        try:  
+        try:
             response = await client.request(
                 method=method.upper(),
                 url=endpoint,
@@ -25,24 +23,18 @@ async def forward_request(
                 content=body,
             )
         except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Gateway error: {str(e)}"
-            )
+            raise HTTPException(status_code=400, detail=f"Gateway error: {str(e)}")
     if response.status_code >= 400:
         try:
             detail = response.json().get("detail", response.text)
         except Exception:
             detail = response.text
-        raise HTTPException(
-            status_code=response.status_code,
-            detail=detail
-        )
+        raise HTTPException(status_code=response.status_code, detail=detail)
     return Response(
         content=response.content,
         status_code=response.status_code,
         headers=dict(response.headers),
-        media_type=response.headers.get("content-type")
+        media_type=response.headers.get("content-type"),
     )
 
 
@@ -51,7 +43,7 @@ async def gateway_proxy(request: Request, path: str):
     method = request.method
     base_url = f"http://{settings.USER_SERVICE_HOST}:{settings.USER_SERVICE_PORT}"
     headers = dict(request.headers)
-    headers.pop("content-length", None) 
+    headers.pop("content-length", None)
     body = await request.body() if method in ["POST", "PUT", "PATCH"] else None
 
     response = await forward_request(
@@ -61,5 +53,5 @@ async def gateway_proxy(request: Request, path: str):
         headers=headers,
         body=body,
     )
-    
+
     return response

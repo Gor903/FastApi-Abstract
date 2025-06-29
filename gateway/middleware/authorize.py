@@ -1,14 +1,10 @@
-from fastapi import HTTPException
+import httpx
+from config import settings
 from fastapi.responses import JSONResponse
-
+from httpx import AsyncClient
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette import status
-import httpx
-from httpx import AsyncClient
 
-
-from config import settings
 
 class AuthMiddleware(BaseHTTPMiddleware):
     NO_TOKEN_PATHS = [
@@ -18,7 +14,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
         "/users/auth/send_otp",
         "/users/auth/reset_password/otp",
     ]
-
 
     async def dispatch(self, request: Request, call_next):
         if request.url.path in self.NO_TOKEN_PATHS:
@@ -39,8 +34,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 )
             except httpx.RequestError as e:
                 return JSONResponse(
-                    status_code=e.status_code,
-                    content={"detail": e.detail}
+                    status_code=e.status_code, content={"detail": e.detail}
                 )
 
             if response.status_code >= 400:
@@ -49,16 +43,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 except Exception:
                     detail = response.text
                 return JSONResponse(
-                    status_code=response.status_code,
-                    content={"detail": detail}
+                    status_code=response.status_code, content={"detail": detail}
                 )
-                    
+
             user_id = response.json().get("user_id")
 
             request.headers.__dict__["_list"].append(
                 (b"user_id", str(user_id).encode())
             )
-
 
         response = await call_next(request)
 

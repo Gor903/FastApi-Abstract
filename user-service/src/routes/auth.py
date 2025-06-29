@@ -1,15 +1,14 @@
 from uuid import UUID
+
+from db.schemas import MessageResponse
+from db.schemas import auth as schema_auth
+from db.schemas import users as schema_users
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
-
 from src.ctrls import auth as ctrls_auth
-from db.schemas import users as schema_users
-from db.schemas import auth as schema_auth
-from db.schemas import MessageResponse
 from src.dependencies import db_dependency, user_id_dependency
-
+from starlette import status
 
 router = APIRouter(
     prefix="/auth",
@@ -70,7 +69,9 @@ async def send_otp(
         db=db,
     )
 
-    return {"message": "OTP sent",}
+    return {
+        "message": "OTP sent",
+    }
 
 
 @router.post(
@@ -102,7 +103,7 @@ async def login_swagger(
     data = {
         "username": data.username,
         "password": data.password,
-    }    
+    }
 
     response = await ctrls_auth.login(
         data=data,

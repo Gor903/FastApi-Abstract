@@ -41,6 +41,8 @@ class Settings(BaseSettings):
         + f"{os.getenv('USER_SERVICE_POSTGRES_DB')}"
     )
 
+    USER_SERVICE_POSTGRES_HOST: str = os.getenv("USER_SERVICE_POSTGRES_HOST")
+
     # # Service: Celery
     # CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
     # CELERY_RESULT_BACKEND: str = os.getenv(
