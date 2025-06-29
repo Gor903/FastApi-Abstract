@@ -70,7 +70,7 @@ async def login(
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid users",
+            detail="Invalid username or password",
         )
     
     refresh_token_expire = timedelta(

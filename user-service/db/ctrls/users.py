@@ -37,6 +37,7 @@ async def get_user_id(
 ):
     request = data.get("request")
     auth = request.headers.get("Authorization")
+
     if not auth or not auth.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

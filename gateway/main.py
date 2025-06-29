@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request, Response
-
+from fastapi import FastAPI, Request, Response, HTTPException
+import httpx
 from httpx import AsyncClient
 
 from config import settings
@@ -14,37 +14,44 @@ app.add_middleware(authorize.AuthMiddleware)
 async def forward_request(
     method: str, base_url: str, endpoint: str, headers=None, body=None
 ):
+    
     async with AsyncClient(base_url=base_url) as client:
         response = None
-        try:
-
-            safe_headers = {
-                k: v
-                for k, v in (headers or {}).items()
-                if k.lower() != "content-length"
-            }
-
+        try:  
             response = await client.request(
                 method=method.upper(),
                 url=endpoint,
-                headers=safe_headers,
+                headers=headers,
                 content=body,
             )
-        except Exception as e:
-            print(f"forward error: {e}")
-        return Response(
-            content=response.content,
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Gateway error: {str(e)}"
+            )
+    if response.status_code >= 400:
+        try:
+            detail = response.json().get("detail", response.text)
+        except Exception:
+            detail = response.text
+        raise HTTPException(
             status_code=response.status_code,
-            headers=dict(response.headers),
-            media_type=response.headers.get("content-type")
+            detail=detail
         )
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+        media_type=response.headers.get("content-type")
+    )
 
 
 @app.api_route("/users/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def gateway_proxy(request: Request, path: str):
     method = request.method
-    base_url = f"http://user-service:8001"
+    base_url = f"http://{settings.USER_SERVICE_HOST}:{settings.USER_SERVICE_PORT}"
     headers = dict(request.headers)
+    headers.pop("content-length", None) 
     body = await request.body() if method in ["POST", "PUT", "PATCH"] else None
 
     response = await forward_request(
