@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from db.ctrls import auth as ctrls_auth
+from src.ctrls import auth as ctrls_auth
 from db.schemas import users as schema_users
 from db.schemas import auth as schema_auth
 from db.schemas import MessageResponse
