@@ -51,6 +51,7 @@ async def get_user_id(
     query = (
         select(RefreshToken)
         .where(RefreshToken.id == payload.get("refresh_token_id"))
+        .where(RefreshToken.revoked == False)
     )
     await get_data_from_table(
         query=query,

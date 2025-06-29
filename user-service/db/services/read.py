@@ -22,7 +22,7 @@ async def get_data_from_table(
             __model__: BaseModel | None = await session.scalar(query)
 
             if __model__ is None:
-                raise Exception("Data not found")
+                raise Exception(f"Data not found")
 
             return __model__
 

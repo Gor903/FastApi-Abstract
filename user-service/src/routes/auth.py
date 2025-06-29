@@ -1,3 +1,4 @@
+from uuid import UUID
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +8,7 @@ from db.ctrls import auth as ctrls_auth
 from db.schemas import users as schema_users
 from db.schemas import auth as schema_auth
 from db.schemas import MessageResponse
-from src.dependencies import db_dependency
+from src.dependencies import db_dependency, user_id_dependency
 
 
 router = APIRouter(
@@ -117,10 +118,11 @@ async def login_swagger(
 )
 async def reset_password(
     data: schema_auth.PasswordResset,
-    # user: user_dependency,
+    user_id: UUID = user_id_dependency,
     db: AsyncSession = db_dependency,
 ):
     data = data.model_dump()
+    data["user_id"] = user_id
 
     response = await ctrls_auth.reset_password(
         data=data,

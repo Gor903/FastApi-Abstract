@@ -62,7 +62,7 @@ async def login(
     )
 
     authorization = await verify_authorization(
-        user=user,
+        user_id=user.id,
         password=data.get("password"),
         db=db,
     )
@@ -234,10 +234,11 @@ async def reset_password(
 ):      
     old_password = data.get("old_password")
     new_password = data.get("new_password")
-    user = data.get("user")
+    user_id = data.get("user_id")
+
 
     authorization = await verify_authorization(
-        user=user,
+        user_id=user_id,
         password=old_password,
         db=db,
     )
@@ -248,7 +249,7 @@ async def reset_password(
             detail="Invalid users",
         )
     
-    query = select(Auth).where(Auth.user_id == user.id)
+    query = select(Auth).where(Auth.user_id == user_id)
     
     auth = await get_data_from_table(
         query=query,
@@ -370,11 +371,13 @@ async def reset_password_otp(
         session=db,
     )
 
+    hashed_password = await hash_password(data.get("password"))
+
     await update_model(
         model_class=Auth,
         id=auth.id,
         schema={
-            "hashed_password": await hash_password(data.get("password")),
+            "hashed_password": hashed_password,
         },
         session=db,
     )
@@ -389,15 +392,14 @@ async def reset_password_otp(
 
 
 async def verify_authorization(
-    user: User,
+    user_id: uuid.UUID,
     password: str,
     db: AsyncSession,
 ):
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid users",
-        )
+    user = await get_user(
+        id=user_id,
+        db=db,
+    )
 
     query = select(Auth).where(Auth.user_id == user.id)
 
@@ -416,3 +418,28 @@ async def verify_authorization(
         plain_password=password,
         hashed_password=auth.hashed_password,
     )
+
+
+async def get_otp(
+    user_id: str,
+    db: AsyncSession,
+):
+    query = (
+        select(OTPVerification)
+        .where(OTPVerification.user_id == user_id)
+        .where(OTPVerification.is_used == False)
+        .where(OTPVerification.expires_at > datetime.now())
+    )
+
+    otp_db = await get_data_from_table(
+        query=query,
+        session=db,
+    )
+
+    if not otp_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid OTP found",
+        )
+
+    return otp_db
