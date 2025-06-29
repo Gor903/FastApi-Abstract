@@ -193,8 +193,6 @@ async def send_otp(
         session=db,
     )
 
-    print(otp_cunt)
-
     if otp_cunt > 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -214,7 +212,7 @@ async def send_otp(
         },
     )
 
-    print("inserted")
+    # send
 
 
 async def verify_otp(
