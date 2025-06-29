@@ -13,7 +13,6 @@ repos:
             build/|
             dist/|
             env.py|
-            __init__.py|
           )
 
   - repo: https://github.com/psf/black
