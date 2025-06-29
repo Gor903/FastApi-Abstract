@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Request
+from uuid import UUID
+from fastapi import APIRouter, Request, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from db.ctrls import users as ctrls_users
 from db.schemas import users as schema_users
-from src.dependencies import db_dependency
+from src.dependencies import db_dependency, user_id_dependency
 
 
 router = APIRouter(
@@ -13,8 +14,15 @@ router = APIRouter(
 )
 
 
+@router.get("/id")
+async def receive_data(
+    user_id: UUID = user_id_dependency,
+):
+    return {"user_id": user_id}
+
+
 @router.get(
-    path="/id",
+    path="/validate",
     response_model=schema_users.UserIdResponse,
     status_code=status.HTTP_200_OK,
 )
