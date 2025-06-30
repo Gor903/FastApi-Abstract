@@ -26,7 +26,7 @@ class UserRegister(BaseModel):
     )
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserResponse(BaseModel):
@@ -53,7 +53,7 @@ class UserResponse(BaseModel):
     )
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserIdResponse(BaseModel):
@@ -63,4 +63,4 @@ class UserIdResponse(BaseModel):
     )
 
     class Config:
-        orm_mode = True
+        from_attributes = True

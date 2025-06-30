@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
+from core import settings
 from db import Base
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -59,7 +60,7 @@ class RefreshToken(Base):
         nullable=False,
     )
     issued_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
+        default=datetime.now,
         nullable=False,
     )
     expires_at: Mapped[datetime] = mapped_column(
@@ -101,7 +102,8 @@ class OTPVerification(Base):
         nullable=True,
     )
     expires_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow() + timedelta(minutes=10),
+        default=lambda: datetime.now()
+        + timedelta(minutes=settings.OTP_EXPIRES_MINUTES),
         nullable=False,
     )
 
