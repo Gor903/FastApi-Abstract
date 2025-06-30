@@ -110,3 +110,6 @@ class OTPVerification(Base):
     user: Mapped["User"] = relationship(
         back_populates="otp_verification",
     )
+
+    def __repr__(self):
+        return f"<OTPVerification id={self.id} user_id={self.user_id} is_used={self.is_used}>"
