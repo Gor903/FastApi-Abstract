@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    container_name: ${PROJECT_NAME}-gateway
+    depends_on:
+      - user-service
+    volumes:
+      - ./gateway:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    networks:
+      - backend
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port ${USER_SERVICE_PORT} --reload
+    hostname: ${USER_SERVICE_HOST}
+    container_name: ${PROJECT_NAME}-user-service
+    volumes:
+      - ./user-service:/app
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+    ports:
+      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+    env_file:
+      - ./.env
+    networks:
+      - backend
+      - user-service-db
+
+  user-service-db:
+    image: postgres:latest
+    container_name: ${PROJECT_NAME}-db
+    hostname: ${USER_SERVICE_POSTGRES_HOST}
+    command: postgres -p ${USER_SERVICE_POSTGRES_PORT}
+    environment:
+      POSTGRES_DB: ${USER_SERVICE_POSTGRES_DB}
+      POSTGRES_USER: ${USER_SERVICE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${USER_SERVICE_POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -p ${USER_SERVICE_POSTGRES_PORT} -U ${USER_SERVICE_POSTGRES_USER} -d ${USER_SERVICE_POSTGRES_DB}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${USER_SERVICE_POSTGRES_PORT}:${USER_SERVICE_POSTGRES_PORT}"
+    networks:
+      - user-service-db
+
+
+volumes:
+  postgres_data:
+
+networks:
+ backend:
+  driver: bridge
+ user-service-db:
+  driver: bridge
