@@ -1,0 +1,191 @@
+services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    container_name: ${PROJECT_NAME}-gateway
+    depends_on:
+      - user-service
+    volumes:
+      - ./gateway:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    networks:
+      - services
+
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host ${USER_SERVICE_HOST} --port ${USER_SERVICE_PORT}
+    hostname: ${USER_SERVICE_HOST}
+    container_name: ${PROJECT_NAME}-user-service
+    volumes:
+      - ./services/user-service:/app
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    networks:
+      - services
+      - user-service-db
+
+  user-service-db:
+    image: postgres:latest
+    container_name: ${PROJECT_NAME}-user-service-db
+    hostname: ${USER_SERVICE_POSTGRES_HOST}
+    command: postgres -p ${USER_SERVICE_POSTGRES_PORT}
+    environment:
+      POSTGRES_DB: ${USER_SERVICE_POSTGRES_DB}
+      POSTGRES_USER: ${USER_SERVICE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${USER_SERVICE_POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -p ${USER_SERVICE_POSTGRES_PORT} -U ${USER_SERVICE_POSTGRES_USER} -d ${USER_SERVICE_POSTGRES_DB}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - postgres_data_us:/var/lib/postgresql/data
+    networks:
+      - user-service-db
+
+  storage-app:
+    build:
+      context: ./services/storage-app
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host ${STORAGE_APP_HOST} --port ${STORAGE_APP_PORT}
+    hostname: ${STORAGE_APP_HOST}
+    container_name: ${PROJECT_NAME}-storage-app
+    volumes:
+      - ./services/storage-app:/app
+    depends_on:
+      storage-app-db:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    networks:
+      - services
+      - storage-app-db
+
+  storage-app-db:
+    image: postgres:latest
+    container_name: ${PROJECT_NAME}-storage-app-db
+    hostname: ${STORAGE_APP_POSTGRES_HOST}
+    command: postgres -p ${STORAGE_APP_POSTGRES_PORT}
+    environment:
+      POSTGRES_DB: ${STORAGE_APP_POSTGRES_DB}
+      POSTGRES_USER: ${STORAGE_APP_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${STORAGE_APP_POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -p ${STORAGE_APP_POSTGRES_PORT} -U ${STORAGE_APP_POSTGRES_USER} -d ${STORAGE_APP_POSTGRES_DB}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - postgres_data_sa:/var/lib/postgresql/data
+    networks:
+      - storage-app-db
+
+  penalty-app:
+    build:
+      context: ./services/penalty-app
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host ${PENALTY_APP_HOST} --port ${PENALTY_APP_PORT} --reload
+    hostname: ${PENALTY_APP_HOST}
+    volumes:
+      - ./services/penalty-app:/app
+    container_name: ${PROJECT_NAME}-penalty-app
+    depends_on:
+      penalty-app-db:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    networks:
+      - services
+      - penalty-app-db
+
+  penalty-app-db:
+    image: postgres:latest
+    container_name: ${PROJECT_NAME}-penalty-app-db
+    hostname: ${PENALTY_POSTGRES_HOST}
+    command: postgres -p ${PENALTY_POSTGRES_PORT}
+    environment:
+      POSTGRES_DB: ${PENALTY_POSTGRES_DB}
+      POSTGRES_USER: ${PENALTY_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${PENALTY_POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -p ${PENALTY_POSTGRES_PORT} -U ${PENALTY_POSTGRES_USER} -d ${PENALTY_POSTGRES_DB}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - postgres_data_pa:/var/lib/postgresql/data
+    networks:
+      - penalty-app-db
+
+
+  notification-app:
+    build:
+      context: ./services/notification
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host ${NOTIFICATION_HOST} --port ${NOTIFICATION_PORT} --reload
+    hostname: ${NOTIFICATION_HOST}
+    volumes:
+      - ./services/notification:/app
+    container_name: ${PROJECT_NAME}-notification
+    env_file:
+      - ./.env
+    networks:
+      - services
+      - celery-net
+
+
+  celery_worker:
+    build:
+      context: ./services/notification
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME}-celery
+    command: celery -A core.celery_app worker --loglevel=warning
+    volumes:
+      - ./services/notification:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    networks:
+      - celery-net
+
+  redis:
+    image: redis:7
+    container_name: ${PROJECT_NAME}-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - celery-net
+
+volumes:
+  postgres_data_us:
+  postgres_data_sa:
+  postgres_data_pa:
+
+networks:
+ services:
+  driver: bridge
+ user-service-db:
+  driver: bridge
+ storage-app-db:
+  driver: bridge
+ penalty-app-db:
+  driver: bridge
+ celery-net:
+  driver: bridge

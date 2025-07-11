@@ -1,0 +1,138 @@
+services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    container_name: ${PROJECT_NAME}-gateway
+    depends_on:
+      - user-service
+    volumes:
+      - ./gateway:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    networks:
+      - services
+
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port ${USER_SERVICE_PORT} --reload
+    hostname: ${USER_SERVICE_HOST}
+    container_name: ${PROJECT_NAME}-user-service
+    volumes:
+      - ./services/user-service:/app
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+    ports:
+      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+    env_file:
+      - ./.env
+    networks:
+      - services
+      - user-service-db
+
+  user-service-db:
+    image: postgres:latest
+    container_name: ${PROJECT_NAME}-user-service-db
+    hostname: ${USER_SERVICE_POSTGRES_HOST}
+    command: postgres -p ${USER_SERVICE_POSTGRES_PORT}
+    environment:
+      POSTGRES_DB: ${USER_SERVICE_POSTGRES_DB}
+      POSTGRES_USER: ${USER_SERVICE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${USER_SERVICE_POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -p ${USER_SERVICE_POSTGRES_PORT} -U ${USER_SERVICE_POSTGRES_USER} -d ${USER_SERVICE_POSTGRES_DB}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - postgres_data_us:/var/lib/postgresql/data
+    ports:
+      - "${USER_SERVICE_POSTGRES_PORT}:${USER_SERVICE_POSTGRES_PORT}"
+    networks:
+      - user-service-db
+
+  background-app:
+    build:
+      context: ./services/background
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port ${BACKGROUND_PORT} --reload
+    hostname: ${BACKGROUND_HOST}
+    container_name: ${PROJECT_NAME}-background
+    volumes:
+      - ./services/background:/app
+    ports:
+      - "${BACKGROUND_PORT}:${BACKGROUND_PORT}"
+    env_file:
+      - ./.env
+    networks:
+      - services
+      - celery-net
+
+
+  celery_worker:
+    build:
+      context: ./services/background
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME}-celery
+    command: celery -A core.celery_app worker --loglevel=warning
+    volumes:
+      - ./services/background:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    networks:
+      - celery-net
+
+  celery-beat:
+    build:
+      context: ./services/background
+      dockerfile: Dockerfile
+    volumes:
+      - ./services/background:/app
+    command: celery -A core.celery_app beat --loglevel=info
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - celery_worker
+    networks:
+      - celery-net
+
+  redis:
+    image: redis:7
+    container_name: ${PROJECT_NAME}-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - celery-net
+
+volumes:
+  postgres_data_us:
+  postgres_data_sa:
+  postgres_data_pa:
+
+networks:
+ services:
+  driver: bridge
+ user-service-db:
+  driver: bridge
+ storage-app-db:
+  driver: bridge
+ penalty-app-db:
+  driver: bridge
+ celery-net:
+  driver: bridge
