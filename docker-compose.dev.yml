@@ -20,7 +20,7 @@ services:
     build:
       context: ./services/user-service
       dockerfile: Dockerfile
-    command: uvicorn main:app --host 0.0.0.0 --port ${USER_SERVICE_PORT} --reload
+    command: uvicorn user_service.main:app --host ${USER_SERVICE_HOST} --port ${USER_SERVICE_PORT} --reload
     hostname: ${USER_SERVICE_HOST}
     container_name: ${PROJECT_NAME}-user-service
     volumes:
