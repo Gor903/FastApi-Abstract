@@ -3,8 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from user_service.api.dependencies import db_dependency, user_id_dependency
 from user_service.ctrls import users as users_ctrls
-from user_service.dependencies import db_dependency, user_id_dependency
 from user_service.schemas import users as users_schemas
 
 router = APIRouter(

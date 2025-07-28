@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from user_service.api.dependencies import db_dependency, user_id_dependency
 from user_service.ctrls import auth as auth_ctrls
-from user_service.dependencies import db_dependency, user_id_dependency
 from user_service.schemas import MessageResponse
 from user_service.schemas import auth as auth_schemas
 from user_service.schemas import users as users_schemas

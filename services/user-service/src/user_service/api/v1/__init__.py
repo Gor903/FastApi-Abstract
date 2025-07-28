@@ -1,5 +1,5 @@
 __all__ = [
-    "routes",
+    "router",
 ]
 
-from . import routes
+from .router import router

@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from user_service.api.v1.routes import auth_router, users_router
+from user_service.api.v1 import router as api_v1_router
 from user_service.db import init_db
 from user_service.exceptions import AppException, app_exception_handler
 
@@ -20,8 +20,7 @@ def create_app() -> FastAPI:
 
     app.add_exception_handler(AppException, app_exception_handler)
 
-    app.include_router(auth_router)
-    app.include_router(users_router)
+    app.include_router(api_v1_router)
 
     return app
 

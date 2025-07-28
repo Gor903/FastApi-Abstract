@@ -19,7 +19,7 @@ async def dispatch(request: Request):
     if request.url.path in NO_TOKEN_PATHS:
         return request
 
-    base_url = f"http://{settings.USER_SERVICE_HOST}:{settings.USER_SERVICE_PORT}/"
+    base_url = f"http://{settings.USER_SERVICE_HOST}:{settings.USER_SERVICE_PORT}/{settings.USER_SERVICE_VERSION}/"
     method = "GET"
     endpoint = "validate"
     headers = dict(request.headers)

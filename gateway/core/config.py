@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     USER_SERVICE_HOST: str = os.getenv("USER_SERVICE_HOST")
     USER_SERVICE_PORT: str = os.getenv("USER_SERVICE_PORT")
+    USER_SERVICE_VERSION: str = os.getenv("USER_SERVICE_VERSION")
 
     class Config:
         env_file = "../.env"
